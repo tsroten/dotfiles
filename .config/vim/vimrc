@@ -1,0 +1,368 @@
+" Environment
+set undodir=$XDG_CACHE_HOME/vim/undo
+set backupdir=$XDG_DATA_HOME/vim/backup//
+set directory=$XDG_DATA_HOME/vim/swp//
+set viminfo+='1000,n$XDG_CACHE_HOME/vim/viminfo
+set runtimepath=$XDG_CONFIG_HOME/vim,$XDG_CONFIG_HOME/vim/after,$VIM,$VIMRUNTIME
+let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc"
+
+" Setting up Vundle - the vim plugin bundler
+  let InstallPlugins=0
+  let vundle_readme=expand("$XDG_CONFIG_HOME/vim/bundle/Vundle.vim/README.md")
+  if !filereadable(vundle_readme)
+    echo "Installing Vundle.."
+    echo ""
+    silent !mkdir -p $XDG_CONFIG_HOME/vim/bundle
+    silent !git clone https://github.com/VundleVim/Vundle.vim $XDG_CONFIG_HOME/vim/bundle/Vundle.vim
+    let InstallPlugins=1
+  endif
+
+  set nocompatible
+  filetype off  " Used for Vundle
+  set rtp+=$XDG_CONFIG_HOME/vim/bundle/Vundle.vim
+  call vundle#begin('$XDG_CONFIG_HOME/vim/bundle')
+
+  Plugin 'VundleVim/Vundle.vim'
+
+  " Color schemes
+  Plugin 'arcticicestudio/nord-vim'
+
+  Plugin 'ctrlpvim/ctrlp.vim'
+  Plugin 'fisadev/vim-ctrlp-cmdpalette'
+  Plugin 'mileszs/ack.vim'
+  Plugin 'w0rp/ale'
+  Plugin 'majutsushi/tagbar'
+  Plugin 'vim-airline/vim-airline'
+  Plugin 'vim-airline/vim-airline-themes'
+  Plugin 'tpope/vim-commentary'
+  Plugin 'tpope/vim-fugitive'
+  Plugin 'aquach/vim-http-client'
+  Plugin 'tpope/vim-surround'
+  Plugin 'tmux-plugins/vim-tmux'
+  Plugin 'christoomey/vim-tmux-navigator'
+  Plugin 'wesQ3/vim-windowswap'
+  Plugin 'vimwiki/vimwiki'
+  Plugin 'junegunn/gv.vim'
+  Plugin 'tpope/vim-vinegar'
+  Plugin 'dbakker/vim-projectroot'
+  Plugin 'tpope/vim-unimpaired'
+
+  Plugin 'metakirby5/codi.vim'
+  Plugin 'jpalardy/vim-slime'
+
+  Plugin 'sheerun/vim-polyglot'
+  Plugin 'python-mode/python-mode'
+  Plugin 'chrisbra/csv.vim'
+  Plugin 'magicalbanana/vim-sql-syntax'
+
+  if !has('nvim')
+    Plugin 'tpope/vim-sensible'
+    Plugin 'tpope/vim-dispatch'
+  endif
+
+  if has('nvim')
+    Plugin 'numkil/ag.nvim'
+  endif
+
+  if InstallPlugins == 1
+    echo "Installing plugins"
+    echo ""
+    :PluginInstall
+  endif
+  call vundle#end()
+
+  filetype plugin indent on
+  colorscheme nord
+" Setting up Vundle - the vim plugin bundler end
+
+set encoding=utf-8
+set fileencoding=utf8
+
+" Hide buffers
+set hidden
+
+let mapleader="\<SPACE>"
+
+" Fast buffer switching via number
+nnoremap <Leader>1 :1b<CR>
+nnoremap <Leader>2 :2b<CR>
+nnoremap <Leader>3 :3b<CR>
+nnoremap <Leader>4 :4b<CR>
+nnoremap <Leader>5 :5b<CR>
+nnoremap <Leader>6 :6b<CR>
+nnoremap <Leader>7 :7b<CR>
+nnoremap <Leader>8 :8b<CR>
+nnoremap <Leader>9 :9b<CR>
+nnoremap <Leader>0 :10b<CR>
+
+" Utility keymappings
+nmap <leader>l :setlocal number!<CR>
+nmap <leader>o :set paste!<CR>
+
+if has('nvim')
+  nnoremap <a-j> <c-w>j
+  nnoremap <a-k> <c-w>k
+  nnoremap <a-h> <c-w>h
+  nnoremap <a-l> <c-w>l
+  vnoremap <a-j> <c-\><c-n><c-w>j
+  vnoremap <a-k> <c-\><c-n><c-w>k
+  vnoremap <a-h> <c-\><c-n><c-w>h
+  vnoremap <a-l> <c-\><c-n><c-w>l
+  inoremap <a-j> <c-\><c-n><c-w>j
+  inoremap <a-k> <c-\><c-n><c-w>k
+  inoremap <a-h> <c-\><c-n><c-w>h
+  inoremap <a-l> <c-\><c-n><c-w>l
+  cnoremap <a-j> <c-\><c-n><c-w>j
+  cnoremap <a-k> <c-\><c-n><c-w>k
+  cnoremap <a-h> <c-\><c-n><c-w>h
+  cnoremap <a-l> <c-\><c-n><c-w>l
+  tnoremap <a-j> <c-\><c-n><c-w>j
+  tnoremap <a-k> <c-\><c-n><c-w>k
+  tnoremap <a-h> <c-\><c-n><c-w>h
+  tnoremap <a-l> <c-\><c-n><c-w>l
+  au WinEnter *pid:* call feedkeys('i')
+
+  " Easy-to-open terminals.
+  map <F2> :terminal<CR>
+  map <leader><F2> :e term://
+endif
+
+" Slackecho
+map <leader>sc :let g:SlackChannel=input("Slack user/channel: ")<CR>
+nmap <leader>sb :exec "w !slackecho -p -c " . (exists("g:SlackChannel") ? g:SlackChannel : input("Slack user/channel: "))<CR>
+vmap <leader>sb :<C-u>exec "'<,'>w !slackecho -p -c " . (exists("g:SlackChannel") ? g:SlackChannel : input("Slack user/channel: "))<CR>
+nmap <leader>sm :exec "! slackecho -c " . (exists("g:SlackChannel") ? g:SlackChannel : input("Slack user/channel: ")) . " \"" . escape(input("Message: "), '\\/."*$^~[]') . "\""<CR>
+
+" More natural split opening
+set splitbelow
+set splitright
+
+" Minimized panes show only the status bar.
+set winminheight=0
+
+" Quickly resize windows with vertical split
+map - <C-W>-
+map + <C-W>+
+
+" Automatically rebalance windows on vim resize
+autocmd VimResized * :wincmd =
+
+" Use system clipboard
+set clipboard=unnamed
+
+" Emacs like keybindings for the command line (:) are better
+cnoremap <C-A> <Home>
+cnoremap <C-E> <End>
+cnoremap <C-K> <C-U>
+
+" APPEARANCE
+
+set guifont=Sauce\ Code\ Powerline:h14
+
+" highlight current line
+set cursorline
+
+" No vertical fill character
+set fillchars="vert:\ "
+
+" SEARCHING
+
+" Ignore case when searching
+set ignorecase
+
+" Respect case when searching with uppercase
+set smartcase
+
+" Highlight search matches
+set hlsearch
+
+" Shortcut to clear search matches
+nmap <leader>q :nohlsearch<CR>
+
+
+" No tilde marks on blank lines
+" hi NonText ctermfg=bg
+
+" Easily bring up current file's tags.
+nmap <F9> :TagbarToggle<CR>:TagbarTogglePause<CR>
+
+" Python mode
+let g:pymode_rope = 0
+let g:pymode_doc = 0
+let g:pymode_folding = 0
+let g:pymode_python = 'python3'
+
+" Syntastic recommended settings
+" let g:syntastic_always_populate_loc_list = 1
+" let g:syntastic_auto_loc_list = 1
+" let g:syntastic_check_on_wq = 0
+
+" let g:syntastic_python_python_exec = '/usr/local/bin/python3'
+
+" let g:syntastic_ansible_checkers = ['ansible_lint']
+" let g:syntastic_css_checkers = ['csslint']
+" let g:syntastic_dockerfile_checkers = ['dockerfile_lint']
+" let g:syntastic_html_checkers = ['tidy']
+" let g:syntastic_javascript_checkers = ['standard']
+" let g:syntastic_php_checkers = ['php']
+" let g:syntastic_python_checkers = ['python', 'flake8']
+" let g:syntastic_rst_checkers = ['rstcheck']
+" let g:syntastic_ruby_checkers = ['rubocop']
+" let g:syntastic_markdown_checkers = ['mdl']
+" let g:syntastic_sh_checkers = ['shellcheck']
+" let g:syntastic_yaml_checkers = ['yamllint']
+
+" Airline appearance
+let g:airline_powerline_fonts = 1
+
+" Don't use the ugly default separators.
+let g:airline_left_sep=''
+let g:airline_right_sep=''
+
+" Let airline know when a file was modified.
+" let g:airline_detect_modified = 1
+
+let g:airline_section_z = '%{airline#util#wrap(airline#extensions#windowswap#get_status(),0)}%3p%% %4l/%L:%3v'
+
+" Airline tabline tweaks. This prevents buffers from showing up in the
+" tabline, only shows the tabline when there is more than one tab,
+" and shows the tab number instead of window count.
+let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#show_tab_type = 0
+let g:airline#extensions#tabline#show_buffers = 0
+let g:airline#extensions#tabline#tab_min_count = 2
+let g:airline#extensions#tabline#tab_nr_type = 1
+let g:airline#extensions#tabline#show_close_button = 0
+
+" Don't show statusline junk on inactive windows.
+let g:airline_inactive_collapse=1
+
+let g:ale_enabled = 1
+let g:ale_lint_on_enter = 1
+
+" Default tabs
+set expandtab
+set shiftwidth=2
+set softtabstop=2
+
+autocmd Filetype php setlocal sw=4 sts=4
+autocmd Filetype python setlocal sw=4 sts=4
+autocmd FileType mail setlocal fo+=aw tw=79 noet
+" autocmd FileType mail setlocal nonu noet wrap lbr nolist fo-=t spell spl=en
+autocmd FileType markdown setlocal nonu tw=79
+autocmd FileType text setlocal nonu noet wrap lbr nolist fo-=t spell spl=en
+autocmd FileType git setlocal nofen
+
+" Make Vim recognize *.md as Markdown, not Modula-2.
+autocmd BufNewFile,BufReadPost *.md set filetype=markdown
+
+" Make vim overwrite the crontab when editing.
+autocmd filetype crontab setlocal nobk nowb
+
+" Strip trailing whitespace when saving.
+autocmd FileType php,python,ruby,javascript,html,css autocmd BufWritePre * %s/\s\+$//e
+
+" Use tmux as slime target
+let g:slime_target = "tmux"
+
+nmap <Leader>wl <Plug>VimwikiUISelect
+" Set vim wiki location
+let g:vimwiki_list = [{'path': '~/Dropbox/notes/text/', 'path_html': '~/Dropbox/notes/html/', 'syntax': 'markdown', 'ext': '.md'}]
+
+" Prevent windowswap from clashing with vimwiki.
+let g:windowswap_map_keys = 0
+nnoremap <silent> <leader>ws :call WindowSwap#EasyWindowSwap()<CR>
+
+" Use the silver searcher if it's installed
+if executable('ag')
+  let g:ackprg = 'ag --vimgrep'
+  let g:agprg = 'ag --vimgrep'
+endif
+
+let g:ack_use_dispatch = 0  " I appear to get no results with this set.
+
+" Make ctrl-p open a file, even if it's already open.
+let g:ctrlp_switch_buffer = 0
+
+" Make ctrl-p open files in whatever my current window is.
+let g:ctrlp_reuse_window = 'netrw\|help\|quickfix\|term'
+
+" Show hidden files in ctrl-p.
+let g:ctrlp_show_hidden = 1
+
+" CtrlP ignore files
+" set wildignore+=*/tmp/*,*.so,*.swp,*.zip,*.exe
+let g:ctrlp_custom_ignore = {
+  \ 'dir':  '\v[\/]\.(git|hg|svn)$',
+  \ 'file': '\v\.(pyo|pyc|exe|so|dll|tmp|swp|zip)$',
+  \ }
+
+nmap <leader>; :CtrlPCmdPalette<CR>
+
+" ctrl-p project shortcuts.
+map <leader>p* :exec "CtrlP " . ProjectRootGuess()<CR>
+map <leader>pat :CtrlP ~/code/admin_tools<CR>
+map <leader>pb :CtrlP ~/code/bean_countr<CR>
+map <leader>pcp :CtrlP ~/code/citizen_portal<CR>
+map <leader>pch :CtrlP ~/code/cli_helpers<CR>
+map <leader>pdf :CtrlP ~/code/dot_files<CR>
+map <leader>pdm :CtrlP ~/code/dragonmapper<CR>
+map <leader>pdt :CtrlP ~/code/dtx<CR>
+map <leader>pem :CtrlP ~/code/event_manager<CR>
+map <leader>pev :CtrlP ~/code/events<CR>
+map <leader>pf :CtrlP ~/code/fcache<CR>
+map <leader>pii :CtrlP ~/code/insight_instant<CR>
+map <leader>pim :CtrlP ~/code/insight_machine<CR>
+map <leader>pk :CtrlP ~/code/kps<CR>
+map <leader>pmy :CtrlP ~/code/mycli<CR>
+map <leader>pmc :CtrlP ~/code/managed_course<CR>
+map <leader>por :CtrlP ~/code/orcs<CR>
+map <leader>pos :CtrlP ~/code/order_service<CR>
+map <leader>ppg :CtrlP ~/code/pgcli<CR>
+map <leader>ppy :CtrlP ~/code/pynlpir<CR>
+map <leader>pre :CtrlP ~/code/register_ed<CR>
+map <leader>pv :CtrlP ~/code/validator<CR>
+map <leader>pz :CtrlP ~/code/zhon<CR>
+
+" Fast buffer switching via ctrl-p.
+nnoremap <F5> :CtrlPBuffer<CR>
+nnoremap <leader><F9> :CtrlPBufTag<CR>
+nnoremap <F8> :CtrlPBufTagAll<CR>
+nnoremap <leader><F8> :CtrlPTag<CR>
+
+" Ag project shortcuts.
+map <leader>* :exec "Ack " . expand("<cword>") . " " . ProjectRootGuess()<CR>
+map <leader>ab :exec "Ack " . input("Pattern: ") . " ~/code/bean_countr"<CR>
+map <leader>acp :exec "Ack " . input("Pattern: ") . " ~/code/citizen_portal"<CR>
+map <leader>ach :exec "Ack " . input("Pattern: ") . " ~/code/cli_helpers"<CR>
+map <leader>adf :exec "Ack " . input("Pattern: ") . " ~/code/dot_files"<CR>
+map <leader>adt :exec "Ack " . input("Pattern: ") . " ~/code/dtx"<CR>
+map <leader>adm :exec "Ack " . input("Pattern: ") . " ~/code/dragonmapper"<CR>
+map <leader>aem :exec "Ack " . input("Pattern: ") . " ~/code/event_manager"<CR>
+map <leader>aev :exec "Ack " . input("Pattern: ") . " ~/code/events"<CR>
+map <leader>af :exec "Ack " . input("Pattern: ") . " ~/code/fcache"<CR>
+map <leader>aii :exec "Ack " . input("Pattern: ") . " ~/code/insight_instant"<CR>
+map <leader>aim :exec "Ack " . input("Pattern: ") . " ~/code/insight_machine"<CR>
+map <leader>ak :exec "Ack " . input("Pattern: ") . " ~/code/kps"<CR>
+map <leader>amy :exec "Ack " . input("Pattern: ") . " ~/code/mycli"<CR>
+map <leader>amc :exec "Ack " . input("Pattern: ") . " ~/code/managed_course"<CR>
+map <leader>aor :exec "Ack " . input("Pattern: ") . " ~/code/orcs"<CR>
+map <leader>aos :exec "Ack " . input("Pattern: ") . " ~/code/order_service"<CR>
+map <leader>apg :exec "Ack " . input("Pattern: ") . " ~/code/pgcli"<CR>
+map <leader>apy :exec "Ack " . input("Pattern: ") . " ~/code/pynlpir"<CR>
+map <leader>are :exec "Ack " . input("Pattern: ") . " ~/code/register_ed"<CR>
+map <leader>av :exec "Ack " . input("Pattern: ") . " ~/code/validator"<CR>
+map <leader>az :exec "Ack " . input("Pattern: ") . " ~/code/zhon"<CR>
+
+" fugitive shortcuts.
+map <leader>gs :Gstatus<CR>
+map <leader>gc :Gcommit<CR>
+map <leader>gm :Gmerge<CR>
+map <leader>gpl :Gpull<CR>
+map <leader>gps :Gpush<CR>
+map <leader>gf :Gfetch<CR>
+map <leader>gl :Glog<CR>
+map <leader>gr :Gread<CR>
+map <leader>gw :Gwrite<CR>
+map <leader>gd :Gdiff<CR>
+map <leader>gb :Gblame<CR>
