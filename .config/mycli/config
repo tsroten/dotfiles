@@ -10,14 +10,14 @@ multi_line = False
 # Make me opt-in to running destructive queries.
 destructive_warning = True
 
-# log_file location.
-# log_file = ~/.mycli.log
+# log file location.
+# log_file = ~/.local/share/mycli/log
 
 # Disable logging.
 log_level = NONE
 
 # Audit log location.
-# audit_log = ~/.mycli-audit.log
+# audit_log = ~/.local/share/mycli/audit_log
 
 # Time queries.
 timing = True
@@ -55,7 +55,7 @@ Token.Menu.Completions.ProgressBar = "bg:#00aaaa"
 
 Token.SelectedText = "#ffffff bg:#6666aa"
 
-# Search matches. (reverse-i-search)
+# Search matches (reverse-i-search).
 Token.SearchMatch = "#ffffff bg:#4444aa"
 Token.SearchMatch.Current = "#ffffff bg:#44aa44"
 

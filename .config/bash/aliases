@@ -1,0 +1,35 @@
+# enable aliases to be sudo'ed
+alias sudo='sudo '
+
+# Use correct Python versions.
+alias mutt='PYENV_VERSION=2.7.13 mutt'
+alias offlineimap='PYENV_VERSION=2.7.13 offlineimap'
+
+# Use XDG directories.
+alias tmux='tmux -f $XDG_CONFIG_HOME/tmux/tmux.conf'
+alias gpg='gpg --homedir "$XDG_CONFIG_HOME"/gnupg'
+alias gpg2='gpg2 --homedir "$XDG_CONFIG_HOME"/gnupg'
+alias dict='dict -c "$XDG_CONFIG_HOME"/dict/dictrc'
+alias weechat='weechat -d "$XDG_CONFIG_HOME"/weechat'
+alias sqlite3='sqlite3 -init "$XDG_CONFIG_HOME"/sqlite3/sqliterc'
+alias mysql='mysql --defaults-file=$XDG_CONFIG_HOME/mysql/my.cnf'
+alias mycli='mycli --defaults-file=$XDG_CONFIG_HOME/mysql/my.cnf --myclirc=$XDG_CONFIG_HOME/mycli/config'
+alias twine='twine --config-file=$XDG_CONFIG_HOME/twine/pypirc'
+
+alias v='$EDITOR'
+alias vi='$EDITOR'
+alias ls='ls -lhFG'
+
+if [ "$(uname)" == "Darwin" ]; then
+  alias search="mdfind"
+  alias excel='open -a "Microsoft Excel"'
+fi;
+
+# Make it easy to upgrade Pip packages.
+alias pip2_upgrade="pip2 list --format=freeze -o | cut -d = -f 1 | xargs -n1 pip2 install -U"
+alias pip3_upgrade="pip3 list --format=freeze -o | cut -d = -f 1 | xargs -n1 pip3 install -U"
+
+sshb_mysql() {
+    ssh -f -o ExitOnForwardFailure=yes -L 9306:localhost:3306 \
+    $1 sleep 1
+}
