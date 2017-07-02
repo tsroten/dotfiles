@@ -1,8 +1,10 @@
-#!/usr/bin/env bash
+#!/bin/bash
+#
+# Install the dotfiles.
 
-cd "$(dirname "${BASH_SOURCE}")" || exit;
+cd "$(dirname "${BASH_SOURCE}")" || exit
 
-git pull origin master;
+git pull origin master
 
 doSync() {
   rsync --exclude ".git/" \
@@ -11,16 +13,16 @@ doSync() {
     --exclude "README.md" \
     --exclude "LICENSE.txt" \
     -avh --no-perms . ~;
-  . ~/.bash_profile;
+  . ~/.bash_profile
 }
 
 if [ "$1" = "--force" ] || [ "$1" = "-f" ]; then
-  doSync;
+  doSync
 else
   read -p "This may overwrite existing files in your home directory. Are you sure? (y/n) "
-  echo "";
+  echo ""
   if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-    doSync;
+    doSync
   fi;
 fi;
-unset doSync;
+unset doSync
