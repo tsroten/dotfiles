@@ -1,0 +1,102 @@
+# vi: ft=dosini
+[main]
+
+# Turn on context-sensitive auto-completion.
+smart_completion = True
+
+# Show me less suggestions.
+wider_completion_menu = False
+min_num_menu_lines = 4
+
+# Default multi-line mode to off.
+multi_line = False
+
+# Make it easy to run multiline queries (i.e. press enter with a semicolon).
+multi_line_mode = psql
+
+# Don't auto-detect which output style to use. Make me choose.
+auto_expand = False
+expand = False
+
+# Don't include table aliases in suggestions.
+generate_aliases = False
+
+# Don't store the log file in a config directory.
+log_file = ~/.local/share/pgcli/log
+log_level = NONE
+
+# Don't store the history file in a config directory.
+history_file = ~/.local/share/pgcli/history
+
+# Lowercase keywords look much better.
+casing_file = default
+keyword_casing = lower
+generate_casing_file = False
+case_column_headers = False
+
+# Take a cue from the database schema for output.
+asterisk_column_order = table_order
+
+# Don't use table names if I don't need them.
+qualify_columns = if_more_than_one_table
+
+# When no schema is entered, only suggest objects in search_path
+search_path_filter = False
+
+# Use the less pager for the output.
+pager = less
+
+# Time queries.
+timing = True
+
+# Pretty print output format
+table_format = psql
+
+# The default syntax coloring is fine.
+syntax_style = default
+
+# Use the same keyboard shortcuts as Bash.
+vi = False
+
+# Play it safe with multiple SQL statements.
+on_error = STOP
+
+# Threshold for row-limit prompt.
+row_limit = 1000
+
+# Don't tell me about the software or contributors.
+less_chatty = True
+
+# Minimal, yet helpful prompt.
+prompt = '\h:\d> '
+multiline_continuation_char = '.'
+
+
+[colors]
+Token.Menu.Completions.Completion.Current = "bg:#00aaaa #000000"
+Token.Menu.Completions.Completion = "bg:#008888 #ffffff"
+Token.Menu.Completions.Meta.Current = 'bg:#44aaaa #000000'
+Token.Menu.Completions.Meta = 'bg:#448888 #ffffff'
+Token.Menu.Completions.MultiColumnMeta = "bg:#aaffff #000000"
+Token.Menu.Completions.ProgressButton = "bg:#003333"
+Token.Menu.Completions.ProgressBar = "bg:#00aaaa"
+
+Token.SelectedText = '#ffffff bg:#6666aa'
+
+# Search matches (reverse-i-search).
+Token.SearchMatch = '#ffffff bg:#4444aa'
+Token.SearchMatch.Current = '#ffffff bg:#44aa44'
+
+# The bottom toolbar.
+Token.Toolbar = 'bg:#222222 #aaaaaa'
+Token.Toolbar.Off = 'bg:#222222 #888888'
+Token.Toolbar.On = 'bg:#222222 #ffffff'
+
+Token.Toolbar.Search = 'noinherit bold'
+Token.Toolbar.Search.Text = 'nobold'
+Token.Toolbar.System = 'noinherit bold'
+Token.Toolbar.Arg = 'noinherit bold'
+Token.Toolbar.Arg.Text = 'nobold'
+
+Token.Toolbar.Transaction.Valid = 'bg:#222222 #00ff5f bold'
+Token.Toolbar.Transaction.Failed = 'bg:#222222 #ff005f bold'
