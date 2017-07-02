@@ -1,0 +1,9 @@
+#!/bin/bash
+#
+# Output the number of unread email messages for the tmux status line.
+
+count=$(find ~/mail -ipath '*inbox/new*' -type f -print | wc -l | xargs)
+
+if [[ -n "$count"  && "$count" -gt 0 ]]; then
+  echo "#[fg=colour8,bg=colour12,bold] @ ${count}"
+fi
