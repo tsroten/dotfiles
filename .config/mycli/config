@@ -11,7 +11,7 @@ multi_line = False
 destructive_warning = True
 
 # log file location.
-# log_file = ~/.local/share/mycli/log
+log_file = ~/.cache/mycli/log
 
 # Disable logging.
 log_level = NONE

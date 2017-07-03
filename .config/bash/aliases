@@ -15,6 +15,7 @@ alias sqlite3='sqlite3 -init "$XDG_CONFIG_HOME"/sqlite3/sqliterc'
 alias mysql='mysql --defaults-file=$XDG_CONFIG_HOME/mysql/my.cnf'
 alias mycli='mycli --defaults-file=$XDG_CONFIG_HOME/mysql/my.cnf --myclirc=$XDG_CONFIG_HOME/mycli/config'
 alias twine='twine --config-file=$XDG_CONFIG_HOME/twine/pypirc'
+alias pip='pip --log "$XDG_CACHE_HOME"/pip/log'
 
 alias v='$EDITOR'
 alias vi='$EDITOR'
