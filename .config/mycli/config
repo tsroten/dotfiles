@@ -59,6 +59,11 @@ Token.SelectedText = "#ffffff bg:#6666aa"
 Token.SearchMatch = "#ffffff bg:#4444aa"
 Token.SearchMatch.Current = "#ffffff bg:#44aa44"
 
+# Results output
+Token.Output.Header = 'bold'
+Token.Output.OddRow = '#ansiteal'
+Token.Output.EvenRow = '#ansidarkblue'
+
 # The bottom toolbar.
 Token.Toolbar = "bg:#222222 #aaaaaa"
 Token.Toolbar.Off = "bg:#222222 #888888"
