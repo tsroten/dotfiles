@@ -45,6 +45,9 @@ less_chatty = True
 # Don't auto-detect which output style to use. Make me choose.
 auto_vertical_output = False
 
+# Prefer lowercase keywords.
+keyword_casing = lower
+
 
 [colors]
 Token.Menu.Completions.Completion.Current = "bg:#00aaaa #000000"
