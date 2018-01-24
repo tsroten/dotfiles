@@ -1,0 +1,21 @@
+[general]
+accounts = AccountName
+pythonfile = $XDG_CONFIG_HOME/offlineimap/offlineimap.py
+
+[Account AccountName]
+localrepository = AccountNameLocal
+remoterepository = AccountNameRemote
+
+[Repository AccountNameLocal]
+type = Maildir
+localfolders = $HOME/mail/account_name
+
+[Repository AccountNameRemote]
+type = IMAP
+folderfilter = lambda folder: folder not in ('Folders', 'We', 'Should', 'Not', 'Sync')
+maxconnections = 1
+remotehost = mail.domain.com
+remoteport = 993
+ssl = yes
+remoteuser = email@domain.com
+remotepasseval = get_macos_keychain_password('email@domain.com', 'mail.domain.com')
