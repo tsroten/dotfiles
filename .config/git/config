@@ -1,0 +1,63 @@
+[user]
+    name = Thomas Roten
+    email = tsr@tundrius.net
+    signingkey = D26BDD8B
+
+[core]
+    editor = nvim
+    autocrlf = input
+    safecrlf = true
+
+[color]
+    ui = auto
+
+[credential]
+    helper = osxkeychain
+
+[alias]
+    b = branch
+    c = commit
+    co = checkout
+    d = diff
+    f = fetch
+    m = merge
+    nb = "!f() { git checkout -b \"$1\" && git push -u origin \"$1\"; }; f"
+    pl = pull
+    ps = push
+    t = tag -v
+
+    # Undo the last commit.
+    undo-commit = reset --soft HEAD^
+
+    # View the current working tree status using the short format.
+    s = status -s
+
+    # View abbreviated SHA, description, and history graph of the last 20 commits.
+    l = log --pretty=oneline -n 100 --graph --abbrev-commit
+
+[filter "lfs"]
+    clean = git-lfs clean %f
+    smudge = git-lfs smudge %f
+    required = true
+
+[commit]
+    gpgsign = false
+
+[diff]
+    # Detect copies, just like renames.
+    renames = copies
+
+[merge]
+    # Put summaries of merge commits in the commit message.
+    log = true
+
+[push]
+
+    # Requires Git 1.7.11 or newer.
+    # Push the current branch to its upstream branch, only if the names match.
+    default = simple
+    # Make `git push` push relevant annotated tags when pushing branches out.
+    followTags = true
+
+[init]
+    templatedir = ~/.config/git/template
