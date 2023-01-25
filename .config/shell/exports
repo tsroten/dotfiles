@@ -1,0 +1,34 @@
+# vi: ft=sh
+
+# Make vim the default editor
+if hash nvim 2>/dev/null; then
+  export EDITOR="nvim"
+else
+  export EDITOR="vim"
+fi;
+
+# Prefer US English and use UTF-8
+export LC_ALL="en_US.UTF-8"
+export LANG="en_US.UTF-8"
+
+# Larger shell history (allow 32³ entries)
+export HISTSIZE=32768
+export HISTFILESIZE=$HISTSIZE
+
+# Don’t clear the screen after quitting a manual page
+export MANPAGER="less -X"
+
+# Use XDG directories.
+export LESSHISTFILE="$XDG_CACHE_HOME/less/history"
+export LESSKEY="$XDG_CONFIG_HOME/less/lesskey"
+export GNUPGHOME="$XDG_CONFIG_HOME/gnupg"
+export WEECHAT_HOME="$XDG_CONFIG_HOME/weechat"
+export VIMINIT='let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc" | source $MYVIMRC'
+export PYTHON_EGG_CACHE="$XDG_CACHE_HOME/python-eggs"
+export WORKON_HOME="$XDG_DATA_HOME/virtualenv"
+export MYSQL_TEST_LOGIN_FILE="$XDG_CONFIG_HOME/mysql/mylogin.cnf"
+export MYSQL_HISTFILE="$XDG_CACHE_HOME/mysql/history"
+export MYCLI_HISTFILE="$XDG_CACHE_HOME/mycli/history"
+export PSQLRC="$XDG_CONFIG_HOME/psql/config"
+export PSQL_HISTORY="$XDG_CACHE_HOME/psql/history"
+export PYTHONSTARTUP="$XDG_CONFIG_HOME/python/startup.py"

@@ -16,14 +16,17 @@ alias mysql='mysql --defaults-file=$XDG_CONFIG_HOME/mysql/my.cnf'
 alias mycli='mycli --defaults-file=$XDG_CONFIG_HOME/mysql/my.cnf --myclirc=$XDG_CONFIG_HOME/mycli/config'
 alias twine='twine --config-file=$XDG_CONFIG_HOME/twine/pypirc'
 alias pip='pip --log "$XDG_CACHE_HOME"/pip/log'
+if [ -d "$XDG_CONFIG_HOME/ssh" ]; then
+  alias ssh='ssh -F $XDG_CONFIG_HOME/ssh/config'
+fi
 
 alias v='$EDITOR'
 alias vi='$EDITOR'
 alias ls='ls -lhFG'
 
-if [ "$(uname)" == "Darwin" ]; then
+if [[ "$(uname)" == "Darwin" ]]; then
   alias search="mdfind"
-  alias excel='open -a "Microsoft Excel"'
+  # alias excel='open -a "Microsoft Excel"'
 fi;
 
 # Make it easy to upgrade Pip packages.

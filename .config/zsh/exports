@@ -1,0 +1,19 @@
+# vi: ft=sh
+
+setopt INC_APPEND_HISTORY
+export HISTTIMEFORMAT="[%F %T] "
+setopt EXTENDED_HISTORY
+setopt HIST_IGNORE_ALL_DUPS
+
+# Use XDG directories.
+export HISTFILE="$XDG_CACHE_HOME/zsh/history"
+
+[ ! -d "$XDG_CACHE_HOME/zsh" ] && mkdir -p "$XDG_CACHE_HOME/zsh"
+
+# Show hostname in prompt if we're SSH'ing.
+host=""
+if [ -n "$SSH_CLIENT" ] || [ -n "$SSH_TTY" ]; then
+  host="(\h) "
+fi
+
+export PS1="${host}%F{yellow}%1d%f $ "

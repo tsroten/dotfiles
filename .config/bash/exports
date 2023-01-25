@@ -1,45 +1,22 @@
 # vi: ft=sh
-export PATH="$HOME/.local/bin:/usr/local/sbin:$PATH"
 
-# Make vim the default editor
-if hash nvim 2>/dev/null; then
-  export EDITOR="nvim"
-else
-  export EDITOR="vim"
-fi;
+[[ -r $XDG_CONFIG_HOME/shell/exports ]] && . $XDG_CONFIG_HOME/shell/exports
 
-# Prefer US English and use UTF-8
-export LC_ALL="en_US.UTF-8"
-export LANG="en_US.UTF-8"
-
-# Larger bash history (allow 32³ entries; default is 500)
-export HISTSIZE=32768
-export HISTFILESIZE=$HISTSIZE
 export HISTCONTROL=ignoredups
 
-# Don’t clear the screen after quitting a manual page
-export MANPAGER="less -X"
-
-export LESSOPEN="|/usr/local/bin/lesspipe.sh %s"
-
 # Fix issue with Git commit signing.
-export GPG_TTY=$(tty)
+# export GPG_TTY=$(tty)
 
 # Use XDG directories.
 export HISTFILE="$XDG_CACHE_HOME/bash/history"
-export LESSHISTFILE="$XDG_CACHE_HOME/less/history"
-export LESSKEY="$XDG_CONFIG_HOME/less/lesskey"
-export GNUPGHOME="$XDG_CONFIG_HOME/gnupg"
-export WEECHAT_HOME="$XDG_CONFIG_HOME/weechat"
-export VIMINIT='let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc" | source $MYVIMRC'
-export PYTHON_EGG_CACHE="$XDG_CACHE_HOME/python-eggs"
-export WORKON_HOME="$XDG_DATA_HOME/virtualenv"
-export MYSQL_TEST_LOGIN_FILE="$XDG_CONFIG_HOME/mysql/mylogin.cnf"
-export MYSQL_HISTFILE="$XDG_CACHE_HOME/mysql/history"
-export MYCLI_HISTFILE="$XDG_CACHE_HOME/mycli/history"
-export PSQLRC="$XDG_CONFIG_HOME/psql/config"
-export PSQL_HISTORY="$XDG_CACHE_HOME/psql/history"
-export PYTHONSTARTUP="$XDG_CONFIG_HOME/python/startup.py"
+
+# Show hostname in prompt if we're SSH'ing.
+host=""
+if [ -n "$SSH_CLIENT" ] || [ -n "$SSH_TTY" ]; then
+  host="(\h) "
+fi
+
+export PS1="${host}\[\033[33;1m\]\W\[\033[m\] $ "
 
 # Virtualenvwrapper goodness
 export PYENV_ROOT=/usr/local/var/pyenv
