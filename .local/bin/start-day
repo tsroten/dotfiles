@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DOTFILES="${DOTFILES:-$HOME/code/dotfiles}"
+
+step() {
+  printf '\n\033[1;34m==> %s\033[0m\n' "$*"
+}
+
+printf '\033[1;32mGood morning! Today is %s\033[0m\n' "$(date '+%A, %B %-d %Y')"
+
+step "Updating dotfiles"
+"$DOTFILES/install.sh" --force
+
+step "Updating Homebrew packages"
+brew update && brew upgrade
+
+step "Updating gcloud components"
+gcloud components update --quiet
