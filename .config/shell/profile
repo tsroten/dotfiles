@@ -20,3 +20,5 @@ if [ -f /opt/homebrew/bin/brew ]; then
 fi
 
 bindkey -e
+
+ssh-add --apple-load-keychain 2> /dev/null

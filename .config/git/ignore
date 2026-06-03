@@ -74,3 +74,5 @@ htmlcov
 
 # ag
 .agignore
+
+**/.claude/settings.local.json

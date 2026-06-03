@@ -1,10 +1,10 @@
 [user]
     name = Thomas Roten
-    email = tsr@tundrius.net
+    email = tsr@thomasroten.com
     signingkey = D26BDD8B
 
 [core]
-    editor = nvim
+    editor = vim
     autocrlf = input
     safecrlf = true
 
@@ -58,6 +58,7 @@
     default = simple
     # Make `git push` push relevant annotated tags when pushing branches out.
     followTags = true
+	autoSetupRemote = true
 
 [init]
     templatedir = ~/.config/git/template
