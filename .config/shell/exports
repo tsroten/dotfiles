@@ -32,3 +32,7 @@ export MYCLI_HISTFILE="$XDG_CACHE_HOME/mycli/history"
 export PSQLRC="$XDG_CONFIG_HOME/psql/config"
 export PSQL_HISTORY="$XDG_CACHE_HOME/psql/history"
 export PYTHONSTARTUP="$XDG_CONFIG_HOME/python/startup.py"
+
+# if [[ "$(uname)" == "Darwin" ]]; then
+#   export DOTNET_ROOT="/usr/local/share/dotnet/x64"
+# fi
