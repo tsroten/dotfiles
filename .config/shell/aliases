@@ -23,6 +23,8 @@ fi
 alias v='$EDITOR'
 alias vi='$EDITOR'
 alias ls='ls -lhFG'
+alias c='claude'
+alias g='git'
 
 if [[ "$(uname)" == "Darwin" ]]; then
   alias search="mdfind"
