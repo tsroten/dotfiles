@@ -1,10 +1,6 @@
 # enable aliases to be sudo'ed
 alias sudo='sudo '
 
-# Use correct Python versions.
-alias mutt='PYENV_VERSION=2.7.13 mutt'
-alias offlineimap='PYENV_VERSION=2.7.13 offlineimap'
-
 # Use XDG directories.
 alias tmux='tmux -f $XDG_CONFIG_HOME/tmux/tmux.conf'
 alias gpg='gpg --homedir "$XDG_CONFIG_HOME"/gnupg'
@@ -30,10 +26,6 @@ if [[ "$(uname)" == "Darwin" ]]; then
   alias search="mdfind"
   # alias excel='open -a "Microsoft Excel"'
 fi;
-
-# Make it easy to upgrade Pip packages.
-alias pip2_upgrade="pip2 list --format=freeze -o | cut -d = -f 1 | xargs -n1 pip2 install -U"
-alias pip3_upgrade="pip3 list --format=freeze -o | cut -d = -f 1 | xargs -n1 pip3 install -U"
 
 sshb_mysql() {
     ssh -f -o ExitOnForwardFailure=yes -L ${3:-9306}:${2:-localhost}:3306 \
