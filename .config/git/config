@@ -1,7 +1,8 @@
+[include]
+    path = local
+
 [user]
     name = Thomas Roten
-    email = tsr@thomasroten.com
-    signingkey = D26BDD8B
 
 [core]
     editor = vim
@@ -39,9 +40,6 @@
     clean = git-lfs clean %f
     smudge = git-lfs smudge %f
     required = true
-
-[commit]
-    gpgsign = false
 
 [diff]
     # Detect copies, just like renames.
