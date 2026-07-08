@@ -2,9 +2,19 @@
 set -euo pipefail
 
 DOTFILES="${DOTFILES:-$HOME/code/dotfiles}"
+CODE="${CODE:-$HOME/code}"
+NVM_DIR="${NVM_DIR:-$HOME/.config/nvm}"
 
 step() {
   printf '\n\033[1;34m==> %s\033[0m\n' "$*"
+}
+
+warn() {
+  printf '\033[1;33m  ! %s\033[0m\n' "$*"
+}
+
+ok() {
+  printf '\033[1;32m  ✓ %s\033[0m\n' "$*"
 }
 
 printf '\033[1;32mGood morning! Today is %s\033[0m\n' "$(date '+%A, %B %-d %Y')"
@@ -15,5 +25,75 @@ step "Updating dotfiles"
 step "Updating Homebrew packages"
 brew update && brew upgrade
 
+step "Cleaning up Homebrew"
+brew cleanup
+
+step "Checking gcloud auth"
+if command -v gcloud > /dev/null 2>&1; then
+  active_account=$(gcloud auth list --filter='status=ACTIVE' --format='value(account)' 2>/dev/null || true)
+  if [[ -z "$active_account" ]]; then
+    warn "No active gcloud account — starting login..."
+    gcloud auth login
+    active_account=$(gcloud auth list --filter='status=ACTIVE' --format='value(account)' 2>/dev/null || true)
+  fi
+  ok "gcloud user: $active_account"
+  if ! gcloud auth application-default print-access-token > /dev/null 2>&1; then
+    warn "No application-default credentials — starting ADC login..."
+    gcloud auth application-default login
+  fi
+  ok "gcloud ADC: valid"
+else
+  warn "gcloud not installed, skipping"
+fi
+
+step "Checking GitHub auth"
+if command -v gh > /dev/null 2>&1; then
+  if ! gh auth status > /dev/null 2>&1; then
+    warn "Not authenticated with GitHub — starting login..."
+    gh auth login
+  fi
+  gh_user=$(gh api user --jq '.login' 2>/dev/null || true)
+  ok "GitHub: ${gh_user:-unknown}"
+else
+  warn "gh not installed, skipping"
+fi
+
 step "Updating gcloud components"
-gcloud components update --quiet
+if command -v gcloud > /dev/null 2>&1; then
+  gcloud components update --quiet
+else
+  warn "gcloud not installed, skipping"
+fi
+
+step "Pulling latest repos"
+while IFS= read -r -d '' dir; do
+  repo=$(basename "$dir")
+  if ! git -C "$dir" diff --quiet || ! git -C "$dir" diff --cached --quiet; then
+    warn "$repo: has uncommitted changes, skipping pull"
+    continue
+  fi
+  printf '  pulling %s...\n' "$repo"
+  git -C "$dir" pull --ff-only
+done < <(find "$CODE" -maxdepth 1 -mindepth 1 -type d -exec test -d '{}/.git' \; -print0 | sort -z)
+
+step "Updating Node.js LTS"
+if [[ -f "$NVM_DIR/nvm.sh" ]]; then
+  # nvm is a shell function; source it explicitly in non-interactive scripts
+  { set +u; source "$NVM_DIR/nvm.sh"; set -u; } 2>/dev/null
+  nvm install --lts
+  nvm use --lts
+else
+  warn "nvm not installed, skipping"
+fi
+
+step "Installing platform dependencies"
+(cd "$CODE/platform" && corepack pnpm install --frozen-lockfile)
+
+step "Pruning Docker"
+if ! command -v docker > /dev/null 2>&1; then
+  warn "docker not installed, skipping"
+elif ! docker info > /dev/null 2>&1; then
+  warn "Docker not running, skipping prune"
+else
+  docker system prune -f --filter "until=24h"
+fi
