@@ -86,8 +86,10 @@ else
   warn "nvm not installed, skipping"
 fi
 
-step "Installing platform dependencies"
-(cd "$CODE/platform" && corepack pnpm install --frozen-lockfile)
+if [[ -d "$CODE/platform" ]]; then
+  step "Installing platform dependencies"
+  (cd "$CODE/platform" && corepack pnpm install --frozen-lockfile)
+fi
 
 step "Pruning Docker"
 if ! command -v docker > /dev/null 2>&1; then
