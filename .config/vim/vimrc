@@ -47,6 +47,8 @@ let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc"
   Plugin 'python-mode/python-mode'
   Plugin 'magicalbanana/vim-sql-syntax'
 
+  Plugin 'nvim-treesitter/nvim-treesitter'
+
   if !has('nvim')
     Plugin 'tpope/vim-sensible'
     Plugin 'tpope/vim-dispatch'
@@ -89,6 +91,10 @@ nnoremap <Leader>tN :+tabmove<CR>
 nnoremap <Leader>tP :-tabmove<CR>
 nnoremap <Leader>tc :tabnew<CR>
 nnoremap <Leader>tx :tabclose<CR>
+
+
+nnoremap <Leader>bn :bn<CR>
+nnoremap <Leader>bp :bp<CR>
 
 
 " Utility keymappings
@@ -273,19 +279,20 @@ nnoremap <leader><F8> :CtrlPTag<CR>
 " Project-aware find/search
 map <leader>p* :exec "CtrlP " . ProjectRootGuess()<CR>
 map <leader>* :exec "Ack " . expand("<cword>") . " " . ProjectRootGuess()<CR>
+map <leader>awd :exec "Ack " . input("Search term: ") . " " . ProjectRootGuess()<CR>
 
 " fugitive shortcuts
-map <leader>gs :Gstatus<CR>
-map <leader>gc :Gcommit<CR>
-map <leader>gm :Gmerge<CR>
-map <leader>gpl :Gpull<CR>
-map <leader>gps :Gpush<CR>
-map <leader>gf :Gfetch<CR>
-map <leader>gl :Glog<CR>
+map <leader>gs :G status<CR>
+map <leader>gc :G commit<CR>
+map <leader>gm :G merge<CR>
+map <leader>gpl :G pull<CR>
+map <leader>gps :G push<CR>
+map <leader>gf :G fetch<CR>
+map <leader>gl :G log<CR>
 map <leader>gr :Gread<CR>
 map <leader>gw :Gwrite<CR>
-map <leader>gd :Gdiff<CR>
-map <leader>gb :Gblame<CR>
+map <leader>gd :G diff<CR>
+map <leader>gb :G blame<CR>
 
 let localrc=expand("$XDG_CONFIG_HOME/vim/localrc")
 if filereadable(localrc)
