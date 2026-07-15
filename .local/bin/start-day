@@ -91,6 +91,13 @@ if [[ -d "$CODE/platform" ]]; then
   (cd "$CODE/platform" && corepack pnpm install --frozen-lockfile)
 fi
 
+step "Updating agent skills"
+if npx --no-install skills --version > /dev/null 2>&1; then
+  npx skills update -g
+else
+  warn "skills not installed, skipping"
+fi
+
 step "Pruning Docker"
 if ! command -v docker > /dev/null 2>&1; then
   warn "docker not installed, skipping"
