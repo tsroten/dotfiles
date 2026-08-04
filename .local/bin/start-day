@@ -78,10 +78,13 @@ done < <(find "$CODE" -maxdepth 1 -mindepth 1 -type d -exec test -d '{}/.git' \;
 
 step "Updating Node.js LTS"
 if [[ -f "$NVM_DIR/nvm.sh" ]]; then
-  # nvm is a shell function; source it explicitly in non-interactive scripts
-  { set +u; source "$NVM_DIR/nvm.sh"; set -u; } 2>/dev/null
+  # nvm is a shell function; source it explicitly in non-interactive scripts.
+  # Its internals reference unset vars (e.g. PROVIDED_VERSION), so nounset has
+  # to stay off while running nvm too, not just while sourcing it.
+  set +u
+  source "$NVM_DIR/nvm.sh" 2>/dev/null
   nvm install --lts
-  nvm use --lts
+  set -u
 else
   warn "nvm not installed, skipping"
 fi
