@@ -32,6 +32,9 @@ bindings = [
   # Yank last argument of previous command (like alt-. but alt version)
   { key = "Period",    mods = "Alt", chars = "\x1b." },
   { key = "Semicolon", mods = "Alt", chars = "\x1b;" },  # comment line
+
+  # Claude /terminal-setup
+  { key = "Return", mods = "Shift", chars = "\u001B\r" },
 ]
 
 [font]
