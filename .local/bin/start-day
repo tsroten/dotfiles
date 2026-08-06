@@ -23,7 +23,8 @@ step "Updating dotfiles"
 "$DOTFILES/install.sh" --force
 
 step "Updating Homebrew packages"
-brew update && brew upgrade
+# Upstream cask renames/breakage are routine and shouldn't abort the whole run.
+brew update && brew upgrade || warn "brew upgrade had failures, continuing"
 
 step "Cleaning up Homebrew"
 brew cleanup
@@ -60,7 +61,7 @@ fi
 
 step "Updating gcloud components"
 if command -v gcloud > /dev/null 2>&1; then
-  gcloud components update --quiet
+  gcloud components update --quiet || warn "gcloud components update failed, continuing"
 else
   warn "gcloud not installed, skipping"
 fi
@@ -73,7 +74,7 @@ while IFS= read -r -d '' dir; do
     continue
   fi
   printf '  pulling %s...\n' "$repo"
-  git -C "$dir" pull --ff-only
+  git -C "$dir" pull --ff-only || warn "$repo: pull failed"
 done < <(find "$CODE" -maxdepth 1 -mindepth 1 -type d -exec test -d '{}/.git' \; -print0 | sort -z)
 
 step "Updating Node.js LTS"
