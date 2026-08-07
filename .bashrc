@@ -6,9 +6,8 @@ if [ -f $XDG_CONFIG_HOME/bash/git-aware-prompt/README.md ]; then
   export PS1="${host}\[\033[33;1m\]\W\[\033[m\]\[$txtcyn\]\$git_branch\[$txtred\]\$git_dirty\[$txtrst\] $ "
 fi;
 
-[ -f /usr/local/etc/bash_completion.d/git-completion.bash ] && source /usr/local/etc/bash_completion.d/git-completion.bash
-
-[ -f /usr/local/etc/profile.d/autojump.sh ] && source /usr/local/etc/profile.d/autojump.sh
+# shell/profile has run brew shellenv by now, so HOMEBREW_PREFIX is set.
+[ -f "$HOMEBREW_PREFIX/etc/bash_completion.d/git-completion.bash" ] && source "$HOMEBREW_PREFIX/etc/bash_completion.d/git-completion.bash"
 
 [ -f $XDG_CONFIG_HOME/bash/exports ] && source $XDG_CONFIG_HOME/bash/exports
 

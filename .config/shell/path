@@ -2,6 +2,19 @@
 
 export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
 
+# Put GNU coreutils ahead of the BSD ones so flags and output match the Linux
+# servers. Both shells need this, so it lives here rather than in bash/exports.
+# Checking the directory beats `brew --prefix coreutils`, which forks a process
+# on every shell start; the two paths cover Apple Silicon and Intel.
+for _prefix in /opt/homebrew /usr/local; do
+  if [ -d "$_prefix/opt/coreutils/libexec/gnubin" ]; then
+    export PATH="$_prefix/opt/coreutils/libexec/gnubin:$PATH"
+    export MANPATH="$_prefix/opt/coreutils/libexec/gnuman:${MANPATH:-}"
+    break
+  fi
+done
+unset _prefix
+
 # if [[ "$(uname)" == "Darwin" ]]; then
 #   export PATH="/usr/local/share/dotnet/x64:$PATH"
 # fi

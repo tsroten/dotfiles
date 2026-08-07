@@ -16,7 +16,13 @@ alias pip='pip --log "$XDG_CACHE_HOME"/pip/log'
 
 alias v='$EDITOR'
 alias vi='$EDITOR'
-alias ls='ls -lhFG'
+
+# -G means "colorize" to BSD ls but "--no-group" to GNU's, so the flag can't be
+# shared. shell/path puts GNU coreutils first when it's installed; match it.
+case ":$PATH:" in
+  *"/coreutils/libexec/gnubin:"*) alias ls='ls -lhF --color=auto' ;;
+  *)                              alias ls='ls -lhFG' ;;
+esac
 alias c='claude'
 alias g='git'
 

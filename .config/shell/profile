@@ -8,12 +8,12 @@ export XDG_STATE_HOME="${HOME}/.local/state"
 [ ! -d "$XDG_CACHE_HOME" ] && mkdir -p "$XDG_CACHE_HOME"
 [ ! -d "$XDG_STATE_HOME" ] && mkdir -p "$XDG_STATE_HOME"
 
-[ -f /usr/local/etc/profile.d/autojump.sh ] && source /usr/local/etc/profile.d/autojump.sh
-
+# path before aliases: the ls alias branches on whether GNU coreutils made it
+# onto PATH, so it has to run second.
 [ -f $XDG_CONFIG_HOME/shell/exports ] && source $XDG_CONFIG_HOME/shell/exports
+[ -f $XDG_CONFIG_HOME/shell/path ] && source $XDG_CONFIG_HOME/shell/path
 [ -f $XDG_CONFIG_HOME/shell/aliases ] && source $XDG_CONFIG_HOME/shell/aliases
 [ -f $XDG_CONFIG_HOME/shell/secrets ] && source $XDG_CONFIG_HOME/shell/secrets
-[ -f $XDG_CONFIG_HOME/shell/path ] && source $XDG_CONFIG_HOME/shell/path
 
 # Set PATH, MANPATH, etc., for Homebrew.
 if [ -f /opt/homebrew/bin/brew ]; then

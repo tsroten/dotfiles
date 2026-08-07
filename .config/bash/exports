@@ -23,17 +23,5 @@ fi
 
 export PS1="${host}\[\033[33;1m\]\W\[\033[m\] $ "
 
-# Virtualenvwrapper goodness
-export PYENV_ROOT=/usr/local/var/pyenv
 export PROJECT_HOME=$HOME/code
-export VIRTUALENVWRAPPER_PYTHON=/usr/local/var/pyenv/shims/python
-[[ -r /usr/local/bin/virtualenvwrapper.sh ]] && . /usr/local/bin/virtualenvwrapper.sh
-
 export PROMPT_TOOLKIT_ANSI_COLORS_ONLY=1
-
-if [ "$(uname)" == "Darwin" ]; then
-  # Homebrew-specifics
-  if hash brew 2>/dev/null; then
-    export PATH="$(brew --prefix coreutils)/libexec/gnubin:$PATH"
-  fi;
-fi;
