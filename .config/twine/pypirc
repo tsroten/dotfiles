@@ -1,11 +1,15 @@
+# PyPI dropped username/password uploads: the only supported credential is an
+# API token, used with the literal username __token__. Tokens themselves stay
+# out of this file -- twine reads them from the keyring, or from TWINE_PASSWORD.
 [distutils]
 index-servers =
     pypi
-    pypi-test
+    testpypi
 
 [pypi]
-username:tsroten
+repository = https://upload.pypi.org/legacy/
+username = __token__
 
-[pypi-test]
-repository:https://testpypi.python.org/pypi
-username:tsroten
+[testpypi]
+repository = https://test.pypi.org/legacy/
+username = __token__
