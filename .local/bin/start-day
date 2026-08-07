@@ -20,7 +20,8 @@ ok() {
 printf '\033[1;32mGood morning! Today is %s\033[0m\n' "$(date '+%A, %B %-d %Y')"
 
 step "Updating dotfiles"
-"$DOTFILES/install.sh" --force
+# A dirty tree or a failed pull shouldn't take the rest of the morning with it.
+"$DOTFILES/install.sh" --force || warn "dotfiles update failed, continuing"
 
 step "Updating Homebrew packages"
 # Upstream cask renames/breakage are routine and shouldn't abort the whole run.
