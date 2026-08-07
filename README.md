@@ -213,8 +213,13 @@ hook checks and exits quietly rather than failing invisibly in the background.
 
 ## start-day
 
-`~/.local/bin/start-day` is a morning maintenance run. Each step degrades to a
-warning rather than aborting when a tool is missing:
+`~/.local/bin/start-day` is a morning maintenance run. No step can end the run:
+every one degrades to a warning, whether the tool is missing or the command
+fails outright. That second case is routine on the work machine, where endpoint
+security software intermittently blocks installs and logins — a blocked `pnpm
+install` shouldn't cost you the Docker prune. Steps that report status say what
+is actually true, so a failed login prints a warning rather than a checkmark
+over an empty account name.
 
 - re-runs `install.sh --force`
 - `brew update && brew upgrade`, then `brew cleanup`

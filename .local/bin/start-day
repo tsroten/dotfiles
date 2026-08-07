@@ -28,22 +28,32 @@ step "Updating Homebrew packages"
 brew update && brew upgrade || warn "brew upgrade had failures, continuing"
 
 step "Cleaning up Homebrew"
-brew cleanup
+brew cleanup || warn "brew cleanup had failures, continuing"
 
 step "Checking gcloud auth"
 if command -v gcloud > /dev/null 2>&1; then
   active_account=$(gcloud auth list --filter='status=ACTIVE' --format='value(account)' 2>/dev/null || true)
   if [[ -z "$active_account" ]]; then
     warn "No active gcloud account — starting login..."
-    gcloud auth login
+    gcloud auth login || warn "gcloud login failed, continuing"
     active_account=$(gcloud auth list --filter='status=ACTIVE' --format='value(account)' 2>/dev/null || true)
   fi
-  ok "gcloud user: $active_account"
+  # Report what is actually true: a blocked or cancelled login used to leave
+  # these printing an empty account and a confident "valid".
+  if [[ -n "$active_account" ]]; then
+    ok "gcloud user: $active_account"
+  else
+    warn "gcloud user: still not authenticated"
+  fi
   if ! gcloud auth application-default print-access-token > /dev/null 2>&1; then
     warn "No application-default credentials — starting ADC login..."
-    gcloud auth application-default login
+    gcloud auth application-default login || warn "gcloud ADC login failed, continuing"
   fi
-  ok "gcloud ADC: valid"
+  if gcloud auth application-default print-access-token > /dev/null 2>&1; then
+    ok "gcloud ADC: valid"
+  else
+    warn "gcloud ADC: still unavailable"
+  fi
 else
   warn "gcloud not installed, skipping"
 fi
@@ -52,10 +62,14 @@ step "Checking GitHub auth"
 if command -v gh > /dev/null 2>&1; then
   if ! gh auth status > /dev/null 2>&1; then
     warn "Not authenticated with GitHub — starting login..."
-    gh auth login
+    gh auth login || warn "GitHub login failed, continuing"
   fi
   gh_user=$(gh api user --jq '.login' 2>/dev/null || true)
-  ok "GitHub: ${gh_user:-unknown}"
+  if [[ -n "$gh_user" ]]; then
+    ok "GitHub: $gh_user"
+  else
+    warn "GitHub: still not authenticated"
+  fi
 else
   warn "gh not installed, skipping"
 fi
@@ -85,7 +99,9 @@ if [[ -f "$NVM_DIR/nvm.sh" ]]; then
   # to stay off while running nvm too, not just while sourcing it.
   set +u
   source "$NVM_DIR/nvm.sh" 2>/dev/null
-  nvm install --lts
+  # Guarded so a failure can't skip the `set -u` below and leave the rest of
+  # the run without nounset.
+  nvm install --lts || warn "nvm install failed, continuing"
   set -u
 else
   warn "nvm not installed, skipping"
@@ -93,12 +109,16 @@ fi
 
 if [[ -d "$CODE/platform" ]]; then
   step "Installing platform dependencies"
-  (cd "$CODE/platform" && corepack pnpm install --frozen-lockfile)
+  # Endpoint security software on the work machine intermittently blocks or
+  # quarantines files mid-install, so this step fails there in ways that say
+  # nothing about the rest of the run. Warn and keep going.
+  (cd "$CODE/platform" && corepack pnpm install --frozen-lockfile) \
+    || warn "platform dependency install failed, continuing"
 fi
 
 step "Updating agent skills"
 if npx --no-install skills --version > /dev/null 2>&1; then
-  npx skills update -g
+  npx skills update -g || warn "skills update failed, continuing"
 else
   warn "skills not installed, skipping"
 fi
@@ -109,5 +129,5 @@ if ! command -v docker > /dev/null 2>&1; then
 elif ! docker info > /dev/null 2>&1; then
   warn "Docker not running, skipping prune"
 else
-  docker system prune -f --filter "until=24h"
+  docker system prune -f --filter "until=24h" || warn "docker prune failed, continuing"
 fi
