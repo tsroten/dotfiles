@@ -1,8 +1,13 @@
 # vi: ft=sh
-
-[[ -r $XDG_CONFIG_HOME/shell/exports ]] && . $XDG_CONFIG_HOME/shell/exports
+#
+# Bash-only settings. The shared config in shell/ is already sourced by
+# shell/profile before .bashrc gets here.
 
 export HISTCONTROL=ignoredups
+
+# Bash-only history vars (zsh uses SAVEHIST/EXTENDED_HISTORY instead).
+export HISTFILESIZE=$HISTSIZE
+export HISTTIMEFORMAT="[%F %T] "
 
 # Fix issue with Git commit signing.
 # export GPG_TTY=$(tty)

@@ -11,8 +11,5 @@ fi;
 [ -f /usr/local/etc/profile.d/autojump.sh ] && source /usr/local/etc/profile.d/autojump.sh
 
 [ -f $XDG_CONFIG_HOME/bash/exports ] && source $XDG_CONFIG_HOME/bash/exports
-[ -f $XDG_CONFIG_HOME/bash/aliases ] && source $XDG_CONFIG_HOME/bash/aliases
-[ -f $XDG_CONFIG_HOME/bash/secrets ] && source $XDG_CONFIG_HOME/bash/secrets
-[ -f $XDG_CONFIG_HOME/bash/path ] && source $XDG_CONFIG_HOME/bash/path
 
 if hash pyenv 2>/dev/null; then eval "$(pyenv init -)"; fi

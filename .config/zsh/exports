@@ -1,9 +1,15 @@
 # vi: ft=sh
+#
+# Zsh-only settings. The shared config in shell/ is already sourced by
+# shell/profile before .zshrc gets here.
 
 setopt INC_APPEND_HISTORY
-export HISTTIMEFORMAT="[%F %T] "
 setopt EXTENDED_HISTORY
 setopt HIST_IGNORE_ALL_DUPS
+
+# macOS /etc/zshrc runs first and caps this at 1000, well under the HISTSIZE
+# set in shell/exports. Match them so the saved history isn't truncated.
+export SAVEHIST=$HISTSIZE
 
 # Use XDG directories.
 export HISTFILE="$XDG_CACHE_HOME/zsh/history"
@@ -17,3 +23,7 @@ if [ -n "$SSH_CLIENT" ] || [ -n "$SSH_TTY" ]; then
 fi
 
 export PS1="${host}%F{yellow}%1d%f $ "
+
+# Emacs keybindings. Bash gets these from readline by default; zsh picks vi
+# mode when EDITOR looks like vi, so it has to be set explicitly.
+bindkey -e
