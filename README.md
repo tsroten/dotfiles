@@ -221,6 +221,18 @@ install` shouldn't cost you the Docker prune. Steps that report status say what
 is actually true, so a failed login prints a warning rather than a checkmark
 over an empty account name.
 
+Because nothing aborts, the run is long and a warning 200 lines up is easy to
+miss — so every warning is also buffered and replayed in a `Summary` step at the
+end, tagged with the step it came from. The summary runs from an `EXIT` trap, so
+it still prints if something unexpected does kill the run, and says so:
+
+```
+==> Summary
+  2 warning(s) across 11 steps:
+    ! Checking gcloud auth: gcloud ADC: still unavailable
+    ! Installing platform dependencies: platform dependency install failed, continuing
+```
+
 - re-runs `install.sh --force`
 - `brew update && brew upgrade`, then `brew cleanup`
 - verifies gcloud auth + application-default credentials, and `gh auth status`,
