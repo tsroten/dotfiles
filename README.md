@@ -90,7 +90,9 @@ rather than holding its own credentials, and installing both from Homebrew keeps
 and `gcloud-cli` are the same cask.
 
 Optional, and probed for rather than required: `cmus` and `fpp` (tmux status
-line and plugin), `docker` (pruned by `start-day` when present).
+line and plugin), `docker` (pruned by `start-day` when present), and `uv`,
+`pre-commit`, and Xcode, whose caches `start-day` prunes on whichever machine
+has them.
 
 ## Layout
 
@@ -243,6 +245,21 @@ repos with uncommitted changes are skipped rather than stashed or reset, pulls
 are `--ff-only` so they can't rewrite history, and the Docker prune passes
 neither `-a` nor `--volumes`, so images in use and every named volume survive.
 
+The reclaim steps are drawn along the same line. What the run does on its own is
+each tool's own garbage collector — `npm cache verify`, `pre-commit gc`, `uv
+cache prune`, and `simctl delete unavailable`, which only drops simulators whose
+runtime Xcode has already removed and which therefore can't be booted. What it
+won't do is the `rm -rf` cleanups, however much they'd reclaim: old Xcode
+`DeviceSupport` builds, `DerivedData`, and `docker system prune -a --volumes`
+stay yours to run.
+
+Homebrew is the one place the run is deliberately more aggressive than the
+default. `brew cleanup` keeps downloads for 120 days, so running it every
+morning reclaimed nothing at all while the bottle cache grew to 11 GB;
+`--prune=all` takes the cache down to tens of megabytes. The cost is that
+reinstalling a *current* version needs the network again, which is rarer than
+needing the disk.
+
 Because nothing aborts, the run is long and something 200 lines up is easy to
 miss — so it all comes back in a `Summary` step at the end, in two halves.
 **Warnings** are a record of what went wrong, tagged with the step. **Follow-ups**
@@ -264,7 +281,7 @@ The summary runs from an `EXIT` trap, so it still prints if something unexpected
 kills the run, and says so when that happens.
 
 - re-runs `install.sh --force`
-- `brew update && brew upgrade` (unattended), then `brew cleanup`
+- `brew update && brew upgrade` (unattended), then `brew cleanup --prune=all`
 - signs in to 1Password if the session is missing (first of the auth steps, so
   shell plugins can hand credentials to the CLIs checked after it)
 - verifies gcloud auth + application-default credentials, and `gh auth status`,
@@ -275,6 +292,10 @@ kills the run, and says so when that happens.
 - `nvm install --lts`
 - `pnpm install --frozen-lockfile` in `~/code/platform` if it exists
 - `npx skills update -g`
+- prunes tool caches — `npm cache verify`, `pre-commit gc`, `uv cache prune` —
+  skipping any that aren't installed, silently
+- `xcrun simctl delete unavailable`, dropping simulators whose runtime Xcode has
+  since removed
 - `docker system prune -f --filter until=24h`
 
 Override the defaults with the `DOTFILES`, `CODE`, and `NVM_DIR` environment
