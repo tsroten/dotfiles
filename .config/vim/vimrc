@@ -48,7 +48,6 @@ let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc"
 
   Plugin 'sheerun/vim-polyglot'
   Plugin 'python-mode/python-mode'
-  Plugin 'magicalbanana/vim-sql-syntax'
 
   Plugin 'nvim-treesitter/nvim-treesitter'
 
