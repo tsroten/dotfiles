@@ -73,16 +73,21 @@ Since the install is a copy rather than a symlink farm, edits made directly in
 brew install coreutils gh neovim node pipx python@3 python@3.12 rsync \
   terraform tfenv the_silver_searcher tmux universal-ctags urlview
 
-brew --cask install alacritty claude claude-code font-ibm-plex-mono gcloud-cli zed
+brew --cask install 1password 1password-cli alacritty claude claude-code \
+  font-ibm-plex-mono gcloud-cli zed
 
 pipx install --python python3.12 "headroom-ai[all]"
 ```
 
 What the less obvious ones are for: `coreutils` backs the GNU-first `PATH`,
 `universal-ctags` the git tag hooks, `the_silver_searcher` vim's `<leader>*`
-project search, `font-ibm-plex-mono` the font alacritty asks for, and `gh` and
-`node` are used by `start-day`. `google-cloud-sdk` is gone from the cask list
-because Homebrew renamed it — it and `gcloud-cli` are the same cask.
+project search, `font-ibm-plex-mono` the font alacritty asks for, and `gh`, `node`, and
+`1password-cli` are used by `start-day`. `1password-cli` needs the `1password`
+app alongside it: `op` authenticates through the desktop app's CLI integration
+rather than holding its own credentials, and installing both from Homebrew keeps
+`op` on the `brew upgrade` step instead of its own self-updater.
+`google-cloud-sdk` is gone from the cask list because Homebrew renamed it — it
+and `gcloud-cli` are the same cask.
 
 Optional, and probed for rather than required: `cmus` and `fpp` (tmux status
 line and plugin), `docker` (pruned by `start-day` when present).
@@ -230,8 +235,8 @@ so a repo needing credentials fails instead of stalling mid-pull,
 and the dotfiles install, `--quiet` on the gcloud component update.
 
 *Auth is the deliberate exception.* A login has to be interactive, and there's
-no point converging a machine you then can't use — so the gcloud and GitHub
-steps still open a login when credentials are missing.
+no point converging a machine you then can't use — so the 1Password, gcloud, and
+GitHub steps still open a login when credentials are missing.
 
 **Nothing destructive.** Anything that would discard work reports it instead:
 repos with uncommitted changes are skipped rather than stashed or reset, pulls
@@ -260,6 +265,8 @@ kills the run, and says so when that happens.
 
 - re-runs `install.sh --force`
 - `brew update && brew upgrade` (unattended), then `brew cleanup`
+- signs in to 1Password if the session is missing (first of the auth steps, so
+  shell plugins can hand credentials to the CLIs checked after it)
 - verifies gcloud auth + application-default credentials, and `gh auth status`,
   prompting for login if either is missing
 - updates gcloud components

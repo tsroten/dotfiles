@@ -122,6 +122,38 @@ brew update && HOMEBREW_NO_ASK=1 brew upgrade \
 step "Cleaning up Homebrew"
 brew cleanup || warn "brew cleanup had failures, continuing"
 
+step "Checking 1Password auth"
+if command -v op > /dev/null 2>&1; then
+  # First among the auth steps because shell plugins let 1Password hand
+  # credentials to the other CLIs, so anything wired that way needs this session
+  # to exist first.
+  #
+  # `op signin` is idempotent -- it prompts only when the session is missing --
+  # so it can be called unconditionally, but the probe stays for the same reason
+  # the gcloud one does: it tells the difference between "already fine" and "a
+  # login just happened", and a cancelled prompt has to report as unsigned-in
+  # rather than as success.
+  op_account=$(op whoami --format=json 2>/dev/null || true)
+  if [[ -z "$op_account" ]]; then
+    note "Not signed in to 1Password — starting sign-in..."
+    # Needs the desktop app running with "Integrate with 1Password CLI" on;
+    # without it this fails immediately rather than hanging, which is the right
+    # trade for an unattended run.
+    op signin || warn "1Password sign-in failed, continuing"
+    op_account=$(op whoami --format=json 2>/dev/null || true)
+  fi
+  if [[ -n "$op_account" ]]; then
+    # jq only decorates the message, so a machine without it still reports
+    # signed-in rather than dropping the step.
+    op_email=$(printf '%s' "$op_account" | jq -r '.email // empty' 2>/dev/null || true)
+    ok "1Password: ${op_email:-signed in}"
+  else
+    recommend "1Password still not signed in — run: op signin"
+  fi
+else
+  warn "op not installed, skipping"
+fi
+
 step "Checking gcloud auth"
 if command -v gcloud > /dev/null 2>&1; then
   active_account=$(gcloud auth list --filter='status=ACTIVE' --format='value(account)' 2>/dev/null || true)
