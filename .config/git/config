@@ -5,7 +5,8 @@
     name = Thomas Roten
 
 [core]
-    editor = vim
+    # No editor set on purpose: git falls back to $EDITOR, which shell/exports
+    # points at nvim when it's installed and vim otherwise.
     autocrlf = input
     safecrlf = true
 

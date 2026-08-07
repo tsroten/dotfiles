@@ -1,7 +1,15 @@
 #!/bin/sh
 set -e
-PATH="/usr/local/bin:$PATH"
-dir="`git rev-parse --git-dir`"
+
+# Homebrew before /usr/bin: macOS ships a BSD ctags that rejects every flag
+# used below. Both prefixes are listed to cover Apple Silicon and Intel.
+PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+# The callers run this in the background with output discarded, so a failure
+# here would be silent. Bail cleanly when a usable ctags isn't installed.
+ctags --version 2>/dev/null | grep -qE '^(Universal|Exuberant) Ctags' || exit 0
+
+dir="$(git rev-parse --git-dir)"
 trap 'rm -f "$dir/$$.tags"' EXIT
 git ls-files | \
   ctags --tag-relative -L - -f"$dir/$$.tags" --languages=-javascript,sql
