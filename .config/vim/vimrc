@@ -43,7 +43,6 @@ let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc"
   Plugin 'tpope/vim-rsi'
   Plugin 'christoomey/vim-tmux-navigator'
   Plugin 'wesQ3/vim-windowswap'
-  Plugin 'vimwiki/vimwiki'
   Plugin 'tpope/vim-vinegar'
   Plugin 'dbakker/vim-projectroot'
 
@@ -234,18 +233,7 @@ autocmd filetype crontab setlocal nobk nowb
 " Strip trailing whitespace when saving.
 autocmd FileType php,python,ruby,javascript,html,css autocmd BufWritePre * %s/\s\+$//e
 
-nmap <Leader>wl <Plug>VimwikiUISelect
-nmap <Leader>wx <Plug>VimwikiToggleListItem
-
-let g:vimwiki_list = [{'path': '$HOME/notes/text/', 'path_html': '$HOME/notes/html/', 'syntax': 'markdown', 'ext': '.md'}]
-let g:vimwiki_diary_months = {
-      \ 1: '一月', 2: '二月', 3: '三月',
-      \ 4: '四月', 5: '五月', 6: '六月',
-      \ 7: '七月', 8: '八月', 9: '九月',
-      \ 10: '十月', 11: '十一月', 12: '十二月'
-      \ }
-
-" Prevent windowswap from clashing with vimwiki.
+" Only map the one windowswap command I actually use.
 let g:windowswap_map_keys = 0
 nnoremap <silent> <leader>ws :call WindowSwap#EasyWindowSwap()<CR>
 

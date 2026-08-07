@@ -49,14 +49,37 @@ linkSshConfig() {
   echo "Linked $link -> $target"
 }
 
+# Vundle installs plugins but never removes ones dropped from the vimrc, so a
+# removed plugin lingers on every machine that already had it. Run the sync
+# under vim when it is available: its plugin list is a superset of neovim's
+# (vim-sensible and vim-dispatch are vim-only), so PluginClean! under neovim
+# would delete those two.
+syncVimPlugins() {
+  local -a editor
+  if hash vim 2>/dev/null; then
+    editor=(vim)
+  elif hash nvim 2>/dev/null; then
+    editor=(nvim --headless)
+  else
+    return 0
+  fi
+
+  echo "Syncing vim plugins"
+  if ! "${editor[@]}" +PluginClean! +PluginInstall +qall; then
+    echo "warning: vim plugin sync failed" >&2
+  fi
+}
+
 if [ "${1:-}" = "--force" ] || [ "${1:-}" = "-f" ]; then
   doSync
   linkSshConfig
+  syncVimPlugins
 else
   read -rp "This may overwrite existing files in your home directory. Are you sure? (y/n) "
   echo ""
   if [[ "$REPLY" =~ ^[Yy]$ ]]; then
     doSync
     linkSshConfig
+    syncVimPlugins
   fi
 fi
