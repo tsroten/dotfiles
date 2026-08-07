@@ -34,7 +34,8 @@ let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc"
   Plugin 'ctrlpvim/ctrlp.vim'
   Plugin 'fisadev/vim-ctrlp-cmdpalette'
   Plugin 'mileszs/ack.vim'
-  Plugin 'w0rp/ale'
+  " ale moved from w0rp/ale to dense-analysis/ale.
+  Plugin 'dense-analysis/ale'
   Plugin 'vim-airline/vim-airline'
   Plugin 'vim-airline/vim-airline-themes'
   Plugin 'tpope/vim-fugitive'
@@ -46,7 +47,9 @@ let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc"
   Plugin 'tpope/vim-vinegar'
   Plugin 'dbakker/vim-projectroot'
 
-  Plugin 'sheerun/vim-polyglot'
+  " vim-polyglot was dropped: it's archived upstream, it fights nvim-treesitter,
+  " and vim 9.1 and neovim now ship syntax for everything it was covering here
+  " (terraform, hcl, typescript, toml, yaml, markdown, go, rust).
   Plugin 'python-mode/python-mode'
 
   Plugin 'nvim-treesitter/nvim-treesitter'
