@@ -4,12 +4,43 @@ Personal configuration for macOS: shell (bash/zsh), vim/neovim, tmux, git,
 alacritty, and a handful of CLI tools. The repo mirrors the layout of `$HOME`,
 so installing is just an `rsync` of this tree into your home directory.
 
-Everything is [XDG][xdg]-first: config lives under `~/.config`, caches under
-`~/.cache`, data under `~/.local/share`, and state under `~/.local/state`. Tools
-that don't support XDG natively are coaxed into it with environment variables,
-aliases, or (for ssh) a symlink.
+## Goals
+
+These are the standing principles; when a change here has to break a tie, it
+breaks in favor of one of them.
+
+- **Idempotent install.** `install.sh` is safe to run repeatedly and is run
+  unattended by `start-day`. It backs up rather than clobbers, and re-running it
+  is the normal way to apply a change.
+- **`start-day` converges the machine.** One command brings everything current —
+  dotfiles, packages, credentials, repos. Every step degrades to a warning
+  instead of aborting, so a single missing tool can't stop the rest.
+- **Close the gap to Linux servers.** macOS ships BSD userland; GNU coreutils
+  goes first on `PATH` so flags, output, and muscle memory match the servers.
+- **One theme everywhere.** [Nord][nord], currently — vim, tmux, and alacritty.
+- **System clipboard everywhere.** `clipboard=unnamed` in vim, tmux-yank in
+  tmux, so yanking means the same thing in every context.
+- **Shell-agnostic where it can be.** Anything that works in both bash and zsh
+  lives in `shell/`; only genuinely divergent settings go in `bash/` or `zsh/`.
+- **[XDG][xdg]-first, to keep `$HOME` clean.** Config in `~/.config`, caches in
+  `~/.cache`, data in `~/.local/share`, state in `~/.local/state`. Tools without
+  native XDG support are coaxed into it with environment variables, aliases, or
+  (for ssh) a symlink.
+- **Current practice over inherited habit.** Prefer the maintained tool and the
+  supported auth mechanism; delete config that no longer does anything.
+
+### Two machines
+
+This is installed on a personal and a work laptop. They share a GitHub account
+and nothing else — no shared credentials, accounts, or cloud access, and the
+work machine runs additional security software. So anything machine-specific
+stays out of this repo entirely and lives in the untracked local override files
+described under [Machine-local overrides](#machine-local-overrides). Config that
+is committed here has to work on both, which is why optional tooling is always
+probed for rather than assumed.
 
 [xdg]: https://specifications.freedesktop.org/basedir-spec/latest/
+[nord]: https://www.nordtheme.com/
 
 ## Install
 
@@ -38,12 +69,22 @@ Since the install is a copy rather than a symlink farm, edits made directly in
 ### Packages
 
 ```sh
-brew install coreutils neovim python@3 python@3.12 pipx rsync terraform tfenv tmux urlview
+brew install coreutils gh neovim node pipx python@3 python@3.12 rsync \
+  terraform tfenv the_silver_searcher tmux universal-ctags urlview
 
-brew --cask install alacritty claude claude-code gcloud-cli google-cloud-sdk zed
+brew --cask install alacritty claude claude-code font-ibm-plex-mono gcloud-cli zed
 
 pipx install --python python3.12 "headroom-ai[all]"
 ```
+
+What the less obvious ones are for: `coreutils` backs the GNU-first `PATH`,
+`universal-ctags` the git tag hooks, `the_silver_searcher` vim's `<leader>*`
+project search, `font-ibm-plex-mono` the font alacritty asks for, and `gh` and
+`node` are used by `start-day`. `google-cloud-sdk` is gone from the cask list
+because Homebrew renamed it — it and `gcloud-cli` are the same cask.
+
+Optional, and probed for rather than required: `cmus` and `fpp` (tmux status
+line and plugin), `docker` (pruned by `start-day` when present).
 
 ## Layout
 
@@ -70,8 +111,10 @@ The color scheme throughout is [Nord][nord] — vim (`nord-vim`), tmux
 
 ## Machine-local overrides
 
-Several files intentionally source paths that this repo does **not** track, so
-per-machine or secret settings stay out of version control:
+Several files intentionally source paths that this repo does **not** track. This
+is the seam between the two machines: anything that differs between personal and
+work — work email and signing key, per-host ssh, credentials — goes in one of
+these and never gets committed.
 
 | File | Sourced by |
 | --- | --- |
@@ -93,20 +136,25 @@ Config is split by portability, and the split is strict:
   (`HISTCONTROL`/`HISTFILESIZE` vs `setopt`/`SAVEHIST`), and zsh's `bindkey -e`.
 
 Both shells enter through `shell/profile`, which sets the XDG variables
-(creating the directories if needed), sources `exports`, `aliases`, `secrets`,
-and `path` in that order, then runs homebrew's `shellenv` and a lazy nvm load
-(`--no-use`, to keep zsh startup fast). Each shell's rc file then layers its own
-`exports` on top. `.bashrc` additionally pulls in git-aware-prompt, git
-completion, autojump, and pyenv when they're installed.
+(creating the directories if needed), sources `exports`, `path`, `aliases`, and
+`secrets` in that order, then runs homebrew's `shellenv`. Each shell's rc file
+layers its own `exports` on top. `.bashrc` additionally pulls in
+git-aware-prompt and git completion when they're installed.
 
-One wrinkle worth knowing: macOS ships an `/etc/zshrc` that sets `SAVEHIST=1000`
-before any of this runs, which would otherwise silently cap saved history well
-below the `HISTSIZE` set in `shell/exports`. `zsh/exports` resets it to match.
+That order matters in one place: `path` runs before `aliases` because the `ls`
+alias branches on what it finds. `shell/path` puts GNU coreutils ahead of the
+BSD tools, and `-G` means *colorize* to BSD `ls` but *`--no-group`* to GNU's, so
+the alias picks `--color=auto` or `-G` based on which one is actually on `PATH`.
+
+macOS also ships an `/etc/zshrc` that sets `SAVEHIST=1000` before any of this
+runs, which would otherwise silently cap saved history well below the `HISTSIZE`
+in `shell/exports`. `zsh/exports` resets it to match.
 
 Most aliases exist to force XDG paths on tools that don't support them
 (`tmux`, `gpg`, `sqlite3`, `mysql`, `mycli`, `twine`, `pip`). The rest are
-shorthand: `v`/`vi` → `$EDITOR`, `c` → `claude`, `g` → `git`, `ls` → `ls -lhFG`.
-`$EDITOR` prefers `nvim` and falls back to `vim`.
+shorthand: `v`/`vi` → `$EDITOR`, `c` → `claude`, `g` → `git`. `$EDITOR` prefers
+`nvim` and falls back to `vim`; nothing else hardcodes an editor, so git picks
+it up through the same variable.
 
 ## vim
 
@@ -119,6 +167,11 @@ CtrlP (files, buffers, tags, command palette), Ack (project-aware, backed by
 
 `runtimepath` is prepended to rather than replaced, so neovim keeps its libdir
 and the bundled treesitter parsers its built-in ftplugins expect.
+
+Syntax highlighting comes from the editors themselves rather than a bundle:
+`vim-polyglot` was dropped once vim 9.1 and neovim shipped everything it was
+covering here, and because it conflicts with `nvim-treesitter`. The one
+exception is the vendored `syntax/sql.vim` below.
 
 `syntax/sql.vim` is vendored from the `magicalbanana/vim-sql-syntax` plugin
 whose repo no longer exists, with a local fix making PostGIS function keywords
@@ -149,10 +202,14 @@ loads, so the nord-tmux plugin theme applies underneath them.
 `config` sets the basics — osxkeychain credentials, `push.default
 = simple`, `autoSetupRemote`, rename/copy detection — plus short aliases
 (`b`, `c`, `co`, `d`, `s`, `l`, `nb` to branch-and-push, `undo-commit`).
+`core.editor` is deliberately unset so git falls through to `$EDITOR`.
 
 `init.templatedir` points at `.config/git/template`, so every newly created or
 cloned repo gets hooks that rebuild a ctags index in the background after
-commit, checkout, merge, and rebase.
+commit, checkout, merge, and rebase. Two caveats: the hooks only reach repos
+created *after* the template is in place, and they need `universal-ctags` —
+macOS's `/usr/bin/ctags` is a BSD build that rejects the flags involved, so the
+hook checks and exits quietly rather than failing invisibly in the background.
 
 ## start-day
 
