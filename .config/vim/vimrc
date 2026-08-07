@@ -3,7 +3,11 @@ set undodir=$XDG_CACHE_HOME/vim/undo
 set backupdir=$XDG_DATA_HOME/vim/backup//
 set directory=$XDG_DATA_HOME/vim/swp//
 set viminfo+='1000,n$XDG_CACHE_HOME/vim/viminfo
-set runtimepath=$XDG_CONFIG_HOME/vim,$XDG_CONFIG_HOME/vim/after,$VIM,$VIMRUNTIME
+" Add the XDG config dir to the runtimepath rather than replacing it. The
+" defaults carry dirs we need -- notably Neovim's libdir, which holds the
+" bundled treesitter parsers its built-in ftplugins expect.
+set runtimepath^=$XDG_CONFIG_HOME/vim
+set runtimepath+=$XDG_CONFIG_HOME/vim/after
 let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc"
 
 " Setting up Vundle - the vim plugin bundler
