@@ -36,21 +36,24 @@ build
 # sphinx build
 docs/_build
 
-# Packages
+# Packages. The directory entries below are setuptools/buildout artifacts that
+# only ever appear at the repo root, so they're anchored with a leading slash.
+# Unanchored they matched a directory of that name at ANY depth, which silently
+# hid real source: `lib` caught src/lib in SvelteKit and Python projects, `bin`
+# caught this repo's own .local/bin. (dist and build stay unanchored above --
+# those really are build output wherever they show up.)
 *.egg
 *.eggs
 *.egg-info
-dist
-build
-eggs
-parts
-bin
-var
-sdist
-develop-eggs
-.installed.cfg
-lib
-lib64
+/bin/
+/develop-eggs/
+/eggs/
+/lib/
+/lib64/
+/parts/
+/sdist/
+/var/
+/.installed.cfg
 
 # Installer logs
 pip-log.txt
