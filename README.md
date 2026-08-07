@@ -13,8 +13,9 @@ breaks in favor of one of them.
   unattended by `start-day`. It backs up rather than clobbers, and re-running it
   is the normal way to apply a change.
 - **`start-day` converges the machine.** One command brings everything current —
-  dotfiles, packages, credentials, repos. Every step degrades to a warning
-  instead of aborting, so a single missing tool can't stop the rest.
+  dotfiles, packages, credentials, repos. It never aborts, never prompts (auth
+  being the deliberate exception), and never destroys work; anything needing
+  attention is flagged in a summary at the end.
 - **Close the gap to Linux servers.** macOS ships BSD userland; GNU coreutils
   goes first on `PATH` so flags, output, and muscle memory match the servers.
 - **One theme everywhere.** [Nord][nord], currently — vim, tmux, and alacritty.
@@ -213,28 +214,52 @@ hook checks and exits quietly rather than failing invisibly in the background.
 
 ## start-day
 
-`~/.local/bin/start-day` is a morning maintenance run. No step can end the run:
-every one degrades to a warning, whether the tool is missing or the command
-fails outright. That second case is routine on the work machine, where endpoint
-security software intermittently blocks installs and logins — a blocked `pnpm
-install` shouldn't cost you the Docker prune. Steps that report status say what
-is actually true, so a failed login prints a warning rather than a checkmark
-over an empty account name.
+`~/.local/bin/start-day` is a morning convergence run, governed by three rules.
 
-Because nothing aborts, the run is long and a warning 200 lines up is easy to
-miss — so every warning is also buffered and replayed in a `Summary` step at the
-end, tagged with the step it came from. The summary runs from an `EXIT` trap, so
-it still prints if something unexpected does kill the run, and says so:
+**Nothing ends the run.** Every step degrades to a warning, whether the tool is
+missing or the command fails outright. That second case is routine on the work
+machine, where endpoint security software intermittently blocks installs — a
+blocked `pnpm install` shouldn't cost you the Docker prune. Steps that report
+status say what is actually true, so a failed login prints a warning rather than
+a checkmark over an empty account name.
+
+**Nothing prompts**, so the run can be left to finish on its own:
+`HOMEBREW_NO_ASK` for Homebrew's upgrade confirmation, `GIT_TERMINAL_PROMPT=0`
+so a repo needing credentials fails instead of stalling mid-pull,
+`COREPACK_ENABLE_DOWNLOAD_PROMPT=0`, `npx --yes`, `--force` on the Docker prune
+and the dotfiles install, `--quiet` on the gcloud component update.
+
+*Auth is the deliberate exception.* A login has to be interactive, and there's
+no point converging a machine you then can't use — so the gcloud and GitHub
+steps still open a login when credentials are missing.
+
+**Nothing destructive.** Anything that would discard work reports it instead:
+repos with uncommitted changes are skipped rather than stashed or reset, pulls
+are `--ff-only` so they can't rewrite history, and the Docker prune passes
+neither `-a` nor `--volumes`, so images in use and every named volume survive.
+
+Because nothing aborts, the run is long and something 200 lines up is easy to
+miss — so it all comes back in a `Summary` step at the end, in two halves.
+**Warnings** are a record of what went wrong, tagged with the step. **Follow-ups**
+are the things left for you to do, each with the command to do it — this is
+where rules 2 and 3 surface, since anything the run won't decide or won't
+destroy on your behalf ends up here. Follow-ups print last, because they're the
+half worth acting on:
 
 ```
 ==> Summary
-  2 warning(s) across 11 steps:
-    ! Checking gcloud auth: gcloud ADC: still unavailable
+  1 warning(s) across 11 steps:
     ! Installing platform dependencies: platform dependency install failed, continuing
+  2 thing(s) to follow up on:
+    → gcloud ADC unavailable — run: gcloud auth application-default login
+    → dive-sites: uncommitted changes, not pulled — commit or stash
 ```
 
+The summary runs from an `EXIT` trap, so it still prints if something unexpected
+kills the run, and says so when that happens.
+
 - re-runs `install.sh --force`
-- `brew update && brew upgrade`, then `brew cleanup`
+- `brew update && brew upgrade` (unattended), then `brew cleanup`
 - verifies gcloud auth + application-default credentials, and `gh auth status`,
   prompting for login if either is missing
 - updates gcloud components
