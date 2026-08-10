@@ -5,7 +5,7 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")" || exit
 
-git pull origin master
+git pull origin main
 
 doSync() {
   rsync --exclude ".git/" \
