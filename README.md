@@ -70,7 +70,7 @@ Since the install is a copy rather than a symlink farm, edits made directly in
 ### Packages
 
 ```sh
-brew install coreutils gh neovim node pipx python@3 python@3.12 rsync \
+brew install coreutils gh neovim node pipx python@3 python@3.12 rsync ruff \
   terraform tfenv the_silver_searcher tmux universal-ctags urlview
 
 brew --cask install 1password 1password-cli alacritty claude claude-code \
@@ -81,7 +81,8 @@ pipx install --python python3.12 "headroom-ai[all]"
 
 What the less obvious ones are for: `coreutils` backs the GNU-first `PATH`,
 `universal-ctags` the git tag hooks, `the_silver_searcher` vim's `<leader>*`
-project search, `font-ibm-plex-mono` the font alacritty asks for, and `gh`, `node`, and
+project search, `ruff` the python linter `ale` picks up,
+`font-ibm-plex-mono` the font alacritty asks for, and `gh`, `node`, and
 `1password-cli` are used by `start-day`. `1password-cli` needs the `1password`
 app alongside it: `op` authenticates through the desktop app's CLI integration
 rather than holding its own credentials, and installing both from Homebrew keeps
@@ -180,6 +181,12 @@ Syntax highlighting comes from the editors themselves rather than a bundle:
 `vim-polyglot` was dropped once vim 9.1 and neovim shipped everything it was
 covering here, and because it conflicts with `nvim-treesitter`. The one
 exception is the vendored `syntax/sql.vim` below.
+
+`python-mode` was dropped for the same reason and because it needs a python3
+interpreter neither editor here has — Apple's vim is built `-python3`, and
+neovim's provider needs `pynvim` installed — so it raised `E319` on every `.py`
+buffer while every feature it offered was already dead. Python linting is `ale`'s
+job now, via `ruff`.
 
 `syntax/sql.vim` is vendored from the `magicalbanana/vim-sql-syntax` plugin
 whose repo no longer exists, with a local fix making PostGIS function keywords

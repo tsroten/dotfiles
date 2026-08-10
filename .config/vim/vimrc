@@ -50,7 +50,12 @@ let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc"
   " vim-polyglot was dropped: it's archived upstream, it fights nvim-treesitter,
   " and vim 9.1 and neovim now ship syntax for everything it was covering here
   " (terraform, hcl, typescript, toml, yaml, markdown, go, rust).
-  Plugin 'python-mode/python-mode'
+
+  " python-mode was dropped for the same reason, plus it needs a python3
+  " interpreter neither editor here has: system vim is built -python3, and nvim
+  " needs pynvim installed for its provider. Every feature still enabled was
+  " silently dead, and it raised E319 on every .py buffer. Syntax and indent now
+  " come from the built-in ftplugins and nvim-treesitter; linting from ale.
 
   Plugin 'nvim-treesitter/nvim-treesitter'
 
@@ -181,12 +186,6 @@ set hlsearch
 
 " Shortcut to clear search matches
 nmap <leader>q :nohlsearch<CR>
-
-" Python mode
-let g:pymode_rope = 0
-let g:pymode_doc = 0
-let g:pymode_folding = 0
-let g:pymode_python = 'python3'
 
 " Airline appearance
 let g:airline_powerline_fonts = 1
