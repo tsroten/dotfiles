@@ -38,6 +38,8 @@ export COPILOT_HOME="$XDG_CONFIG_HOME/copilot"
 export COPILOT_CACHE_HOME="$XDG_CACHE_HOME/copilot"
 export COPILOT_OTEL_FILE_EXPORTER_PATH="$XDG_STATE_HOME/copilot/otel"
 export NVM_DIR="$XDG_CONFIG_HOME/nvm"
+# spacectl keeps API credentials here, so the directory itself stays untracked.
+export SPACELIFT_CONFIG_DIR="$XDG_CONFIG_HOME/spacelift"
 
 # if [[ "$(uname)" == "Darwin" ]]; then
 #   export DOTNET_ROOT="/usr/local/share/dotnet/x64"
