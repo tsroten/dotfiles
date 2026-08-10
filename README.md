@@ -50,7 +50,7 @@ git clone https://github.com/tsroten/dotfiles.git ~/code/dotfiles
 ~/code/dotfiles/install.sh
 ```
 
-`install.sh` pulls the latest `master`, then:
+`install.sh` pulls the latest `main`, then:
 
 1. rsyncs the tree into `~` (excluding `.git/`, `install.sh`, `README.md`, and
    editor cruft). **Existing files are overwritten**, so it prompts for
