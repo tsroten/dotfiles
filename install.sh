@@ -7,8 +7,15 @@ cd "$(dirname "${BASH_SOURCE[0]}")" || exit
 
 git pull origin main
 
+# .claude/ and .agents/ are excluded because they are the link paths the
+# linkXdgDir steps below manage. This repo carries its own .claude/ holding the
+# project-local Claude Code settings, and syncing that would recreate ~/.claude
+# as a real directory on every run -- which linkClaudeConfig then refuses to
+# touch, so the link could never be made.
 doSync() {
   rsync --exclude ".git/" \
+    --exclude ".claude/" \
+    --exclude ".agents/" \
     --exclude ".DS_Store" \
     --exclude "install.sh" \
     --exclude "README.md" \
@@ -154,6 +161,7 @@ else
     doSync
     linkSshConfig
     linkClaudeConfig
+    linkAgentsDir
     syncVimPlugins
   fi
 fi

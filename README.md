@@ -54,7 +54,10 @@ git clone https://github.com/tsroten/dotfiles.git ~/code/dotfiles
 
 1. rsyncs the tree into `~` (excluding `.git/`, `install.sh`, `README.md`, and
    editor cruft). **Existing files are overwritten**, so it prompts for
-   confirmation first — pass `--force`/`-f` to skip the prompt.
+   confirmation first — pass `--force`/`-f` to skip the prompt. `.claude/` and
+   `.agents/` are excluded too: they are the link paths steps 3 and 4 manage,
+   and this repo's own `.claude/` would otherwise recreate `~/.claude` as a real
+   directory on every run, blocking the link permanently.
 2. Symlinks `~/.ssh/config` → `~/.config/ssh/config`, backing up anything
    already at that path to `~/.ssh/config.backup-<timestamp>`. ssh has no XDG
    support and a symlink (unlike an alias) also applies to non-interactive
