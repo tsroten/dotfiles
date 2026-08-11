@@ -26,7 +26,7 @@ breaks in favor of one of them.
 - **[XDG][xdg]-first, to keep `$HOME` clean.** Config in `~/.config`, caches in
   `~/.cache`, data in `~/.local/share`, state in `~/.local/state`. Tools without
   native XDG support are coaxed into it with environment variables, aliases, or
-  (for ssh) a symlink.
+  (for ssh and Claude Code) a symlink.
 - **Current practice over inherited habit.** Prefer the maintained tool and the
   supported auth mechanism; delete config that no longer does anything.
 
@@ -59,7 +59,15 @@ git clone https://github.com/tsroten/dotfiles.git ~/code/dotfiles
    already at that path to `~/.ssh/config.backup-<timestamp>`. ssh has no XDG
    support and a symlink (unlike an alias) also applies to non-interactive
    callers such as git.
-3. Syncs vim plugins with `:PluginClean! :PluginInstall`. This runs under `vim`
+3. Symlinks `~/.claude` → `~/.config/claude`, for much the same reason. Claude
+   Code is XDG-aware only through `CLAUDE_CONFIG_DIR`, which reaches only the
+   processes that inherited the shell exports, and its OAuth credentials are
+   keyed by config directory; a session that missed the export therefore looks
+   unauthenticated and logs in to a second store of its own. Unlike the ssh
+   config, a real directory already at `~/.claude` is left alone with a warning
+   rather than moved aside, because merging two sets of credentials and session
+   state is a judgment call rather than a backup.
+4. Syncs vim plugins with `:PluginClean! :PluginInstall`. This runs under `vim`
    when available and falls back to headless `nvim`, because the vimrc's plugin
    list for vim is a superset of neovim's — running `PluginClean!` under neovim
    would delete the vim-only plugins.

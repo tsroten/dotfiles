@@ -17,6 +17,21 @@ doSync() {
     -avh --no-perms . ~
 }
 
+# Move whatever is at a link path out of the way instead of clobbering it. Shared
+# by the two link steps below, which both want the same numbered-backup naming.
+backupAside() {
+  local path=$1
+  local backup
+  local n=1
+  backup="$path.backup-$(date +%Y%m%d%H%M%S)"
+  while [ -e "$backup" ] || [ -L "$backup" ]; do
+    backup="$path.backup-$(date +%Y%m%d%H%M%S)-$n"
+    n=$((n + 1))
+  done
+  echo "Backing up existing $path to $backup"
+  mv "$path" "$backup"
+}
+
 # ssh has no XDG support, so point its default config path at the XDG one.
 # A symlink (instead of a shell alias) means non-interactive callers get it too.
 linkSshConfig() {
@@ -35,14 +50,49 @@ linkSshConfig() {
 
   # Anything already there gets moved aside, never clobbered.
   if [ -e "$link" ] || [ -L "$link" ]; then
-    local backup="$link.backup-$(date +%Y%m%d%H%M%S)"
-    local n=1
-    while [ -e "$backup" ] || [ -L "$backup" ]; do
-      backup="$link.backup-$(date +%Y%m%d%H%M%S)-$n"
-      n=$((n + 1))
-    done
-    echo "Backing up existing $link to $backup"
-    mv "$link" "$backup"
+    backupAside "$link"
+  fi
+
+  ln -s "$target" "$link"
+  echo "Linked $link -> $target"
+}
+
+# Claude Code reaches the XDG directory only through CLAUDE_CONFIG_DIR, which in
+# turn only reaches processes that inherit the shell exports. Anything else --
+# a launchd agent, an editor's integrated terminal, a login shell that skipped
+# the profile -- falls back to ~/.claude, and that isn't merely untidy: OAuth
+# credentials are keyed by config directory, so a session that missed the export
+# looks unauthenticated and logs in to a second store of its own.
+linkClaudeConfig() {
+  local target="$HOME/.config/claude"
+  local link="$HOME/.claude"
+  local current
+
+  # Trailing slash tolerated so a link made by hand still counts as correct,
+  # rather than being backed up and recreated on every run.
+  current=$(readlink "$link" 2>/dev/null || true)
+  if [ "${current%/}" = "$target" ]; then
+    return 0
+  fi
+
+  # Created here rather than relying on doSync: none of this directory is
+  # tracked, since it holds credentials and session state rather than config.
+  mkdir -p "$target"
+  chmod 700 "$target"
+
+  # A real directory at the link path is Claude Code's own state. Renaming that
+  # aside would read as data loss, so this case reports and stops instead --
+  # merging two config directories is a judgment call, not a backup. The ssh
+  # config above is a file this repo owns and can replace; this isn't.
+  if [ -d "$link" ] && [ ! -L "$link" ]; then
+    echo "warning: $link is a real directory, not a link to $target" >&2
+    echo "warning: merge it into $target by hand, then re-run install.sh" >&2
+    return 0
+  fi
+
+  # A link pointing somewhere else, or a stray file, is ours to move.
+  if [ -e "$link" ] || [ -L "$link" ]; then
+    backupAside "$link"
   fi
 
   ln -s "$target" "$link"
@@ -73,6 +123,7 @@ syncVimPlugins() {
 if [ "${1:-}" = "--force" ] || [ "${1:-}" = "-f" ]; then
   doSync
   linkSshConfig
+  linkClaudeConfig
   syncVimPlugins
 else
   read -rp "This may overwrite existing files in your home directory. Are you sure? (y/n) "
@@ -80,6 +131,7 @@ else
   if [[ "$REPLY" =~ ^[Yy]$ ]]; then
     doSync
     linkSshConfig
+    linkClaudeConfig
     syncVimPlugins
   fi
 fi
