@@ -74,16 +74,16 @@ brew install coreutils gh neovim node pipx python@3 python@3.12 rsync ruff \
   terraform tfenv the_silver_searcher tmux universal-ctags urlview
 
 brew --cask install 1password 1password-cli alacritty claude claude-code \
-  font-ibm-plex-mono gcloud-cli zed
+  copilot-cli font-ibm-plex-mono gcloud-cli zed
 
 pipx install --python python3.12 "headroom-ai[all]"
 ```
 
 What the less obvious ones are for: `coreutils` backs the GNU-first `PATH`,
 `universal-ctags` the git tag hooks, `the_silver_searcher` vim's `<leader>*`
-project search, `ruff` the python linter `ale` picks up,
-`font-ibm-plex-mono` the font alacritty asks for, and `gh`, `node`, and
-`1password-cli` are used by `start-day`. `1password-cli` needs the `1password`
+project search, `ruff` the python linter `ale` picks up, `font-ibm-plex-mono` the
+font alacritty asks for, and `gh`, `node`, `1password-cli`, `claude-code`, and
+`copilot-cli` are used by `start-day`. `1password-cli` needs the `1password`
 app alongside it: `op` authenticates through the desktop app's CLI integration
 rather than holding its own credentials, and installing both from Homebrew keeps
 `op` on the `brew upgrade` step instead of its own self-updater.
@@ -244,8 +244,24 @@ so a repo needing credentials fails instead of stalling mid-pull,
 and the dotfiles install, `--quiet` on the gcloud component update.
 
 *Auth is the deliberate exception.* A login has to be interactive, and there's
-no point converging a machine you then can't use — so the 1Password, gcloud, and
-GitHub steps still open a login when credentials are missing.
+no point converging a machine you then can't use — so the 1Password, gcloud,
+GitHub, Claude, and Copilot steps still open a login when credentials are
+missing.
+
+Every auth step probes rather than trusting a status command, because most of
+them report on the credentials on disk rather than on whether those credentials
+still work: `gcloud auth list` keeps an account `ACTIVE` after the org's reauth
+policy has expired its session, and `claude auth status` keeps saying
+`loggedIn` just the same. The probe is whatever fails when a real command would.
+For gcloud that's minting a token, and for `gh` an API call, both free. The two
+agent CLIs have no free equivalent (Copilot has no status command at all), so
+they are probed with a one-token prompt on Haiku, no tools and no MCP servers
+loaded, which costs a rounding error against the Claude subscription and about
+one AI credit against Copilot's quota per run. Each is probed once on the happy
+path, and API-key and token environment variables are cleared for the probe so
+it exercises the account login rather than something that outranks it. If one of
+those variables is set, the run says so as a follow-up, since it silently wins
+over the account credentials the rest of the time.
 
 **Nothing destructive.** Anything that would discard work reports it instead:
 repos with uncommitted changes are skipped rather than stashed or reset, pulls
@@ -277,7 +293,7 @@ half worth acting on:
 
 ```
 ==> Summary
-  1 warning(s) across 11 steps:
+  1 warning(s) across 16 steps:
     ! Installing platform dependencies: platform dependency install failed, continuing
   2 thing(s) to follow up on:
     → gcloud ADC unavailable — run: gcloud auth application-default login
@@ -293,6 +309,8 @@ kills the run, and says so when that happens.
   shell plugins can hand credentials to the CLIs checked after it)
 - verifies gcloud auth + application-default credentials, and `gh auth status`,
   prompting for login if either is missing
+- verifies Claude and Copilot with a throwaway prompt, running `claude auth login
+  --claudeai` or `copilot login` if the session no longer works
 - updates gcloud components
 - `git pull --ff-only` in every repo directly under `~/code`, skipping any with
   uncommitted changes

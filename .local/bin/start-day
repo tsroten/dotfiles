@@ -209,6 +209,92 @@ else
   warn "gh not installed, skipping"
 fi
 
+step "Checking Claude auth"
+if command -v claude > /dev/null 2>&1; then
+  # `claude auth status` only reads the local credential store, so it keeps
+  # reporting loggedIn after the session behind those credentials has stopped
+  # working -- the same gap as `gcloud auth list`. Sending one token to Haiku with
+  # no tools and no MCP servers is the cheapest thing that actually round-trips
+  # the API, and it fails exactly when an interactive session would.
+  #
+  # ANTHROPIC_API_KEY is cleared for the probe deliberately: it would answer for
+  # the API instead of the account, so an expired login would pass here and then
+  # fail the moment a session tried to use the subscription.
+  claude_probe() {
+    env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN \
+      claude -p ok --model haiku --allowedTools '' --strict-mcp-config \
+      < /dev/null > /dev/null 2>&1
+  }
+  claude_authed=0
+  if claude_probe; then
+    claude_authed=1
+  else
+    note "Claude credentials missing or expired — starting login..."
+    # --claudeai keeps this on the subscription. The alternative (--console) is
+    # usage-billed API access, which isn't what the interactive CLI should use.
+    claude auth login --claudeai || warn "Claude login failed, continuing"
+    # Re-probed rather than trusting the login's exit status, and stored so the
+    # happy path stays at one round-trip a morning.
+    if claude_probe; then claude_authed=1; fi
+  fi
+  claude_status=$(claude auth status --json 2>/dev/null || true)
+  if [ "$claude_authed" -eq 1 ]; then
+    # jq only decorates the message, as in the 1Password step above.
+    claude_email=$(printf '%s' "$claude_status" | jq -r '.email // empty' 2>/dev/null || true)
+    ok "Claude: ${claude_email:-authenticated}"
+  else
+    recommend "Claude still not authenticated — run: claude auth login"
+  fi
+  # Reported, not unset: the variable is presumably exported on purpose, but it
+  # outranks the account login in every session, so it's worth saying out loud.
+  claude_key_source=$(printf '%s' "$claude_status" | jq -r '.apiKeySource // empty' 2>/dev/null || true)
+  if [[ -n "$claude_key_source" ]]; then
+    recommend "Claude is billing the API via $claude_key_source, not the account login — unset it to use the subscription"
+  fi
+else
+  warn "claude not installed, skipping"
+fi
+
+step "Checking Copilot auth"
+if command -v copilot > /dev/null 2>&1; then
+  # Copilot CLI has no status command, and `copilot login` is not idempotent --
+  # it opens a fresh browser OAuth flow every time it's called, so unlike
+  # `op signin` it can't be run unconditionally. That leaves a prompt as the only
+  # probe. Same shape as the Claude one: Haiku, no tools, no MCP servers, which
+  # is roughly one AI credit a morning. --no-auto-update because Homebrew owns
+  # this binary and the CLI otherwise tries to replace it from under brew.
+  #
+  # The token variables are cleared for the same reason ANTHROPIC_API_KEY is
+  # above; all three take precedence over the stored OAuth session.
+  copilot_probe() {
+    env -u COPILOT_GITHUB_TOKEN -u GH_TOKEN -u GITHUB_TOKEN \
+      copilot -p ok --model claude-haiku-4.5 --available-tools '' \
+      --disable-builtin-mcps --allow-all-tools --no-auto-update --log-level none \
+      < /dev/null > /dev/null 2>&1
+  }
+  copilot_authed=0
+  if copilot_probe; then
+    copilot_authed=1
+  else
+    note "Copilot credentials missing or expired — starting login..."
+    copilot login || warn "Copilot login failed, continuing"
+    if copilot_probe; then copilot_authed=1; fi
+  fi
+  if [ "$copilot_authed" -eq 1 ]; then
+    ok "Copilot: authenticated"
+  else
+    recommend "Copilot still not authenticated — run: copilot login"
+  fi
+  for copilot_token_var in COPILOT_GITHUB_TOKEN GH_TOKEN GITHUB_TOKEN; do
+    if [[ -n "${!copilot_token_var:-}" ]]; then
+      recommend "Copilot is using \$$copilot_token_var instead of the account login — unset it to use the OAuth session"
+      break
+    fi
+  done
+else
+  warn "copilot not installed, skipping"
+fi
+
 step "Updating gcloud components"
 if command -v gcloud > /dev/null 2>&1; then
   gcloud components update --quiet || warn "gcloud components update failed, continuing"
