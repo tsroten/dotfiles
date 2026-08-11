@@ -18,7 +18,7 @@ doSync() {
 }
 
 # Move whatever is at a link path out of the way instead of clobbering it. Shared
-# by the two link steps below, which both want the same numbered-backup naming.
+# by the link steps below, which all want the same numbered-backup naming.
 backupAside() {
   local path=$1
   local backup
@@ -57,15 +57,16 @@ linkSshConfig() {
   echo "Linked $link -> $target"
 }
 
-# Claude Code reaches the XDG directory only through CLAUDE_CONFIG_DIR, which in
-# turn only reaches processes that inherit the shell exports. Anything else --
-# a launchd agent, an editor's integrated terminal, a login shell that skipped
-# the profile -- falls back to ~/.claude, and that isn't merely untidy: OAuth
-# credentials are keyed by config directory, so a session that missed the export
-# looks unauthenticated and logs in to a second store of its own.
-linkClaudeConfig() {
-  local target="$HOME/.config/claude"
-  local link="$HOME/.claude"
+# Point ~/.<name> at ~/.config/<name> for tools that hardcode the dotted home
+# path. Deliberately not shared with linkSshConfig above: that one links a single
+# file that this repo owns and doSync has already written, so it can require the
+# target to exist and replace whatever it finds. These directories are the
+# opposite on both counts, and reconciling the two would take more flags than
+# either case saves.
+linkXdgDir() {
+  local name=$1
+  local target="$HOME/.config/$name"
+  local link="$HOME/.$name"
   local current
 
   # Trailing slash tolerated so a link made by hand still counts as correct,
@@ -75,15 +76,15 @@ linkClaudeConfig() {
     return 0
   fi
 
-  # Created here rather than relying on doSync: none of this directory is
-  # tracked, since it holds credentials and session state rather than config.
+  # Created here rather than relying on doSync: none of these directories are
+  # tracked, since they hold credentials and installed state rather than config.
+  # 700 because nothing here is meant to be read outside this account.
   mkdir -p "$target"
   chmod 700 "$target"
 
-  # A real directory at the link path is Claude Code's own state. Renaming that
+  # A real directory at the link path is the tool's own state. Renaming that
   # aside would read as data loss, so this case reports and stops instead --
-  # merging two config directories is a judgment call, not a backup. The ssh
-  # config above is a file this repo owns and can replace; this isn't.
+  # merging two directories is a judgment call, not a backup.
   if [ -d "$link" ] && [ ! -L "$link" ]; then
     echo "warning: $link is a real directory, not a link to $target" >&2
     echo "warning: merge it into $target by hand, then re-run install.sh" >&2
@@ -97,6 +98,26 @@ linkClaudeConfig() {
 
   ln -s "$target" "$link"
   echo "Linked $link -> $target"
+}
+
+# Claude Code reaches the XDG directory only through CLAUDE_CONFIG_DIR, which in
+# turn only reaches processes that inherit the shell exports. Anything else --
+# a launchd agent, an editor's integrated terminal, a login shell that skipped
+# the profile -- falls back to ~/.claude, and that isn't merely untidy: OAuth
+# credentials are keyed by config directory, so a session that missed the export
+# looks unauthenticated and logs in to a second store of its own.
+linkClaudeConfig() {
+  linkXdgDir claude
+}
+
+# The skills CLI (npx skills) has no equivalent of CLAUDE_CONFIG_DIR: its
+# install root is always homedir() + "/.agents", so a link is the only way to
+# move it. Being env-independent is an advantage here, since every caller
+# follows the link whether or not it sourced the profile. Note the skills live
+# in ~/.agents/skills while every agent gets a relative symlink pointing through
+# ~/.agents, so those keep resolving once this link is in place.
+linkAgentsDir() {
+  linkXdgDir agents
 }
 
 # Vundle installs plugins but never removes ones dropped from the vimrc, so a
@@ -124,6 +145,7 @@ if [ "${1:-}" = "--force" ] || [ "${1:-}" = "-f" ]; then
   doSync
   linkSshConfig
   linkClaudeConfig
+  linkAgentsDir
   syncVimPlugins
 else
   read -rp "This may overwrite existing files in your home directory. Are you sure? (y/n) "
