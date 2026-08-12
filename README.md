@@ -94,7 +94,7 @@ brew install coreutils gh neovim node pipx python@3 python@3.12 rsync ruff \
   terraform tfenv the_silver_searcher tmux universal-ctags urlview
 
 brew --cask install 1password 1password-cli alacritty claude claude-code \
-  copilot-cli font-ibm-plex-mono gcloud-cli zed
+  copilot-cli font-ibm-plex-mono gcloud-cli spacectl zed
 
 pipx install --python python3.12 "headroom-ai[all]"
 ```
@@ -102,11 +102,11 @@ pipx install --python python3.12 "headroom-ai[all]"
 What the less obvious ones are for: `coreutils` backs the GNU-first `PATH`,
 `universal-ctags` the git tag hooks, `the_silver_searcher` vim's `<leader>*`
 project search, `ruff` the python linter `ale` picks up, `font-ibm-plex-mono` the
-font alacritty asks for, and `gh`, `node`, `1password-cli`, `claude-code`, and
-`copilot-cli` are used by `start-day`. `1password-cli` needs the `1password`
-app alongside it: `op` authenticates through the desktop app's CLI integration
-rather than holding its own credentials, and installing both from Homebrew keeps
-`op` on the `brew upgrade` step instead of its own self-updater.
+font alacritty asks for, and `gh`, `node`, `1password-cli`, `claude-code`,
+`copilot-cli`, and `spacectl` are used by `start-day`. `1password-cli` needs the
+`1password` app alongside it: `op` authenticates through the desktop app's CLI
+integration rather than holding its own credentials, and installing both from
+Homebrew keeps `op` on the `brew upgrade` step instead of its own self-updater.
 `google-cloud-sdk` is gone from the cask list because Homebrew renamed it — it
 and `gcloud-cli` are the same cask.
 
@@ -265,23 +265,37 @@ and the dotfiles install, `--quiet` on the gcloud component update.
 
 *Auth is the deliberate exception.* A login has to be interactive, and there's
 no point converging a machine you then can't use — so the 1Password, gcloud,
-GitHub, Claude, and Copilot steps still open a login when credentials are
-missing.
+GitHub, Claude, Copilot, and (where it's configured) Spacelift steps still open a
+login when credentials are missing.
 
 Every auth step probes rather than trusting a status command, because most of
 them report on the credentials on disk rather than on whether those credentials
 still work: `gcloud auth list` keeps an account `ACTIVE` after the org's reauth
-policy has expired its session, and `claude auth status` keeps saying
-`loggedIn` just the same. The probe is whatever fails when a real command would.
-For gcloud that's minting a token, and for `gh` an API call, both free. The two
-agent CLIs have no free equivalent (Copilot has no status command at all), so
-they are probed with a one-token prompt on Haiku, no tools and no MCP servers
-loaded, which costs a rounding error against the Claude subscription and about
-one AI credit against Copilot's quota per run. Each is probed once on the happy
-path, and API-key and token environment variables are cleared for the probe so
-it exercises the account login rather than something that outranks it. If one of
-those variables is set, the run says so as a follow-up, since it silently wins
-over the account credentials the rest of the time.
+policy has expired its session, `claude auth status` keeps saying `loggedIn`
+just the same, and `spacectl profile current` goes on naming a profile whose
+token expired days ago. The probe is whatever fails when a real command would.
+For gcloud that's minting a token, for `gh` an API call, and for `spacectl`
+`whoami`, all free. The two agent CLIs have no free equivalent (Copilot has no
+status command at all), so they are probed with a one-token prompt on Haiku, no
+tools and no MCP servers loaded, which costs a rounding error against the Claude
+subscription and about one AI credit against Copilot's quota per run. Each is
+probed once on the happy path, and API-key and token environment variables are
+cleared for the probe so it exercises the account login rather than something
+that outranks it. If one of those variables is set, the run says so as a
+follow-up, since it silently wins over the account credentials the rest of the
+time. Spacelift is the exception there: a `SPACELIFT_API_*` key that works means
+`spacectl` works, which is all that step is asking, so its probe is left to use
+whichever credentials it would normally pick.
+
+The Spacelift step is also the one piece of the run that's opt-in, because an
+endpoint names a specific account and so belongs to the machine rather than to
+this repo. It does nothing until `SPACECTL_LOGIN_ENDPOINT` is set — in
+`~/.config/shell/secrets`, which isn't tracked here — and skips quietly
+otherwise rather than warning, since a machine that does no Spacelift work
+shouldn't be nagged about it every morning. That's `spacectl`'s own variable, so
+the same value serves a hand-run `spacectl profile login`. The local profile
+alias is derived from the endpoint rather than configured separately, taking the
+first label of the host: `https://acme.app.us.spacelift.io` logs in as `acme`.
 
 **Nothing destructive.** Anything that would discard work reports it instead:
 repos with uncommitted changes are skipped rather than stashed or reset, pulls
@@ -313,7 +327,7 @@ half worth acting on:
 
 ```
 ==> Summary
-  1 warning(s) across 16 steps:
+  1 warning(s) across 17 steps:
     ! Installing platform dependencies: platform dependency install failed, continuing
   2 thing(s) to follow up on:
     → gcloud ADC unavailable — run: gcloud auth application-default login
@@ -331,6 +345,9 @@ kills the run, and says so when that happens.
   prompting for login if either is missing
 - verifies Claude and Copilot with a throwaway prompt, running `claude auth login
   --claudeai` or `copilot login` if the session no longer works
+- verifies Spacelift with `spacectl whoami`, running `spacectl profile login` if
+  the token has expired — only on a machine that has set
+  `SPACECTL_LOGIN_ENDPOINT`
 - updates gcloud components
 - `git pull --ff-only` in every repo directly under `~/code`, skipping any with
   uncommitted changes
@@ -344,4 +361,5 @@ kills the run, and says so when that happens.
 - `docker system prune -f --filter until=24h`
 
 Override the defaults with the `DOTFILES`, `CODE`, and `NVM_DIR` environment
-variables.
+variables. `SPACECTL_LOGIN_ENDPOINT` has no default and turns the Spacelift step
+on.
