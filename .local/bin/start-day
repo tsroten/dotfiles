@@ -387,11 +387,20 @@ if [[ -d "$CODE/platform" ]]; then
 fi
 
 step "Updating agent skills"
-if npx --no-install skills --version > /dev/null 2>&1; then
+# Probing the install root, not the CLI. skills is only ever run through npx, so
+# it lives in the npx cache rather than in any node_modules this can see, and
+# `npx --no-install skills` resolves the bare spec against the registry and then
+# fails unless the cache already holds that exact latest version. So it reported
+# "not installed" on precisely the mornings an update was available, and skipped
+# the update that would have fixed it. It also fails outright offline.
+#
+# The CLI hardcodes ~/.agents/skills as its install root (see install.sh step
+# 4), so that directory is what "this machine uses skills" means here.
+if [[ -d "$HOME/.agents/skills" ]]; then
   # --yes so a missing dependency can't stall at npx's install confirmation.
   npx --yes skills update -g || warn "skills update failed, continuing"
 else
-  warn "skills not installed, skipping"
+  warn "no agent skills at ~/.agents/skills, skipping"
 fi
 
 step "Pruning tool caches"
