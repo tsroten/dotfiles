@@ -19,6 +19,7 @@ doSync() {
     --exclude ".DS_Store" \
     --exclude "install.sh" \
     --exclude "README.md" \
+    --exclude "TODO.md" \
     --exclude "LICENSE.txt" \
     --exclude "dotfiles.code-workspace" \
     -avh --no-perms . ~
