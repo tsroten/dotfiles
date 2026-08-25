@@ -2,6 +2,17 @@
 
 export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
 
+# Homebrew keeps rustup keg-only, so its shims (rustup, cargo, rustc) never get
+# linked into the prefix. They also have to land ahead of ~/.cargo/bin, which
+# still holds symlinks to the rustup-init the formula stopped shipping.
+for _prefix in /opt/homebrew /usr/local; do
+  if [ -d "$_prefix/opt/rustup/bin" ]; then
+    export PATH="$_prefix/opt/rustup/bin:$PATH"
+    break
+  fi
+done
+unset _prefix
+
 # Put GNU coreutils ahead of the BSD ones so flags and output match the Linux
 # servers. Both shells need this, so it lives here rather than in bash/exports.
 # Checking the directory beats `brew --prefix coreutils`, which forks a process
