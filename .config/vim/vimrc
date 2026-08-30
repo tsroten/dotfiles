@@ -257,7 +257,7 @@ let g:ctrlp_show_hidden = 1
 " CtrlP ignore files
 " set wildignore+=*/tmp/*,*.so,*.swp,*.zip,*.exe
 let g:ctrlp_custom_ignore = {
-  \ 'dir':  '\v[\/]\.(git|hg|svn)$',
+  \ 'dir':  '\v([\/]\.(git|hg|svn)|[\/]\.claude[\/]worktrees|[\/](target|dist))$',
   \ 'file': '\v\.(pyo|pyc|exe|so|dll|tmp|swp|zip)$',
   \ }
 
