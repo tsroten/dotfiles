@@ -103,12 +103,14 @@ What the less obvious ones are for: `coreutils` backs the GNU-first `PATH`,
 `universal-ctags` the git tag hooks, `the_silver_searcher` vim's `<leader>*`
 project search, `ruff` the python linter `ale` picks up, `font-ibm-plex-mono` the
 font alacritty asks for, and `gh`, `node`, `1password-cli`, `claude-code`,
-`copilot-cli`, and `spacectl` are used by `start-day`. `1password-cli` needs the
-`1password` app alongside it: `op` authenticates through the desktop app's CLI
-integration rather than holding its own credentials, and installing both from
-Homebrew keeps `op` on the `brew upgrade` step instead of its own self-updater.
-`google-cloud-sdk` is gone from the cask list because Homebrew renamed it — it
-and `gcloud-cli` are the same cask.
+`copilot-cli`, and `spacectl` are used by `start-day`. The Port CLI is used by
+`start-day` too but isn't a Homebrew package: install it with `npm install -g
+@port-labs/port-cli`, which also means `brew upgrade` won't keep it current.
+`1password-cli` needs the `1password` app alongside it: `op` authenticates
+through the desktop app's CLI integration rather than holding its own
+credentials, and installing both from Homebrew keeps `op` on the `brew upgrade`
+step instead of its own self-updater. `google-cloud-sdk` is gone from the cask
+list because Homebrew renamed it — it and `gcloud-cli` are the same cask.
 
 Optional, and probed for rather than required: `cmus` and `fpp` (tmux status
 line and plugin), `docker` (pruned by `start-day` when present), and `uv`,
@@ -265,27 +267,33 @@ and the dotfiles install, `--quiet` on the gcloud component update.
 
 *Auth is the deliberate exception.* A login has to be interactive, and there's
 no point converging a machine you then can't use — so the 1Password, gcloud,
-GitHub, Claude, Copilot, and (where it's configured) Spacelift steps still open a
-login when credentials are missing.
+GitHub, Claude, Copilot, Port, and (where it's configured) Spacelift steps still
+open a login when credentials are missing.
 
 Every auth step probes rather than trusting a status command, because most of
 them report on the credentials on disk rather than on whether those credentials
 still work: `gcloud auth list` keeps an account `ACTIVE` after the org's reauth
 policy has expired its session, `claude auth status` keeps saying `loggedIn`
 just the same, and `spacectl profile current` goes on naming a profile whose
-token expired days ago. The probe is whatever fails when a real command would.
-For gcloud that's minting a token, for `gh` an API call, and for `spacectl`
-`whoami`, all free. The two agent CLIs have no free equivalent (Copilot has no
-status command at all), so they are probed with a one-token prompt on Haiku, no
+token expired days ago. `port auth status` is worse than merely stale: it
+reports on every org in the config and exits 0 either way, so an org it has no
+credentials for reads as a failure line under a successful command. The probe is
+whatever fails when a real command would. For gcloud that's minting a token, for
+`gh` an API call, for `spacectl` `whoami`, and for `port` minting a token again,
+all free. Port's is the one probe whose output has to be thrown away rather
+than merely quietened, since `port auth token` prints the bearer token on
+stdout. The two agent CLIs have no free equivalent (Copilot has no status
+command at all), so they are probed with a one-token prompt on Haiku, no
 tools and no MCP servers loaded, which costs a rounding error against the Claude
 subscription and about one AI credit against Copilot's quota per run. Each is
 probed once on the happy path, and API-key and token environment variables are
 cleared for the probe so it exercises the account login rather than something
 that outranks it. If one of those variables is set, the run says so as a
 follow-up, since it silently wins over the account credentials the rest of the
-time. Spacelift is the exception there: a `SPACELIFT_API_*` key that works means
-`spacectl` works, which is all that step is asking, so its probe is left to use
-whichever credentials it would normally pick.
+time. Spacelift and Port are the exceptions there: a `SPACELIFT_API_*` key or a
+`PORT_CLIENT_ID`/`PORT_CLIENT_SECRET` pair that works means `spacectl` or `port`
+works, which is all those steps are asking, so their probes are left to use
+whichever credentials they would normally pick.
 
 The Spacelift step is also the one piece of the run that's opt-in, because an
 endpoint names a specific account and so belongs to the machine rather than to
@@ -348,6 +356,9 @@ kills the run, and says so when that happens.
 - verifies Spacelift with `spacectl whoami`, running `spacectl profile login` if
   the token has expired — only on a machine that has set
   `SPACECTL_LOGIN_ENDPOINT`
+- verifies Port with `port auth token` against the config's `default_org`,
+  running `port auth login` if that org's short-lived OAuth session can no
+  longer produce a token
 - updates gcloud components
 - `git pull --ff-only` in every repo directly under `~/code`, skipping any with
   uncommitted changes

@@ -342,6 +342,57 @@ else
   fi
 fi
 
+step "Checking Port auth"
+# Probing for the Port CLI by name is slightly ambiguous on macOS: MacPorts
+# installs its own `port` in /opt/local/bin, so on a machine with both, PATH
+# order decides. Not worth code -- the wrong one fails the probe and reports as
+# unauthenticated -- but it explains an otherwise baffling warning.
+if command -v port > /dev/null 2>&1; then
+  # `port auth status` is for reading, never for gating: it reports on every org
+  # in the config and exits 0 regardless, printing a "Failed fetching token"
+  # line for an org with no credentials and still calling that success. Minting
+  # a token is the probe that fails when a real command would, the same shape as
+  # the gcloud one. It also has to be the probe rather than a check for the
+  # credentials file, because Port's session is short-lived OAuth -- roughly two
+  # hours, with silent refresh -- so the only useful question is whether a token
+  # can be obtained right now, not whether one was ever stored.
+  #
+  # Stdout is redirected because `port auth token` prints the bearer token
+  # there. It must never be echoed, logged, or captured. Stdin is closed as
+  # elsewhere, so nothing can stall behind the suppressed output.
+  #
+  # No --org: the flag already defaults to the config's default_org, which is
+  # the one org this means to check. The other entries in ~/.port/config.yaml
+  # are placeholders with no credentials, so checking them all would warn every
+  # morning about orgs nobody has logged in to.
+  #
+  # Unlike the agent CLIs above, PORT_CLIENT_ID and PORT_CLIENT_SECRET are left
+  # alone for the probe, for the reason spacectl's variables are: there is no
+  # billing difference between a client credential and an OAuth session, so if a
+  # credential is set and works, `port` works, which is all this step is asking.
+  port_probe() {
+    port auth token < /dev/null > /dev/null 2>&1
+  }
+  if ! port_probe; then
+    note "Port credentials missing or expired — starting login..."
+    # Opens a browser for the SSO flow, so it can't be run unattended; that's
+    # the auth exception.
+    port auth login || warn "Port login failed, continuing"
+  fi
+  if port_probe; then
+    # Decoration only, as with jq above, and read out of the config file rather
+    # than from the CLI because every command that would name the org also
+    # prints the token.
+    port_org=$(sed -n 's/^default_org:[[:space:]]*//p' "$HOME/.port/config.yaml" 2>/dev/null | head -1 || true)
+    ok "Port: ${port_org:-authenticated}"
+  else
+    recommend "Port still not authenticated — run: port auth login"
+  fi
+else
+  # Installed with `npm install -g @port-labs/port-cli`, not from Homebrew.
+  warn "port not installed, skipping"
+fi
+
 step "Updating gcloud components"
 if command -v gcloud > /dev/null 2>&1; then
   gcloud components update --quiet || warn "gcloud components update failed, continuing"
