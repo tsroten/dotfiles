@@ -260,6 +260,45 @@ else
   warn "claude not installed, skipping"
 fi
 
+step "Checking Codex auth"
+if command -v codex > /dev/null 2>&1; then
+  # `codex login status` exits successfully when credentials are present, but
+  # does not prove that the session can still make a request. Use a tiny,
+  # ephemeral run instead, without user config, repo instructions, or writable
+  # access, so the probe exercises auth without loading MCP servers or touching
+  # the working tree.
+  #
+  # Clear the API key and access-token overrides so this specifically checks the
+  # stored ChatGPT login, just as the Claude probe checks its account login.
+  codex_probe() {
+    env -u OPENAI_API_KEY -u CODEX_ACCESS_TOKEN \
+      codex exec --ephemeral --ignore-user-config --ignore-rules \
+      --skip-git-repo-check --sandbox read-only "Reply with only: ok" \
+      < /dev/null > /dev/null 2>&1
+  }
+  codex_authed=0
+  if codex_probe; then
+    codex_authed=1
+  else
+    note "Codex credentials missing or expired — starting login..."
+    codex login || warn "Codex login failed, continuing"
+    if codex_probe; then codex_authed=1; fi
+  fi
+  if [ "$codex_authed" -eq 1 ]; then
+    ok "Codex: authenticated"
+  else
+    recommend "Codex still not authenticated — run: codex login"
+  fi
+  for codex_token_var in OPENAI_API_KEY CODEX_ACCESS_TOKEN; do
+    if [[ -n "${!codex_token_var:-}" ]]; then
+      recommend "Codex is using \$$codex_token_var instead of the stored ChatGPT login — unset it to use the subscription"
+      break
+    fi
+  done
+else
+  warn "codex not installed, skipping"
+fi
+
 step "Checking Copilot auth"
 if command -v copilot > /dev/null 2>&1; then
   # Copilot CLI has no status command, and `copilot login` is not idempotent --

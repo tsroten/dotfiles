@@ -103,8 +103,8 @@ What the less obvious ones are for: `coreutils` backs the GNU-first `PATH`,
 `universal-ctags` the git tag hooks, `the_silver_searcher` vim's `<leader>*`
 project search, `ruff` the python linter `ale` picks up, `font-ibm-plex-mono` the
 font alacritty asks for, and `gh`, `node`, `1password-cli`, `claude-code`,
-`copilot-cli`, and `spacectl` are used by `start-day`. The Port CLI is used by
-`start-day` too but isn't a Homebrew package: install it with `npm install -g
+`codex`, `copilot-cli`, and `spacectl` are used by `start-day`. The Port CLI is
+used by `start-day` too but isn't a Homebrew package: install it with `npm install -g
 @port-labs/port-cli`, which also means `brew upgrade` won't keep it current.
 `1password-cli` needs the `1password` app alongside it: `op` authenticates
 through the desktop app's CLI integration rather than holding its own
@@ -267,8 +267,8 @@ and the dotfiles install, `--quiet` on the gcloud component update.
 
 *Auth is the deliberate exception.* A login has to be interactive, and there's
 no point converging a machine you then can't use — so the 1Password, gcloud,
-GitHub, Claude, Copilot, Port, and (where it's configured) Spacelift steps still
-open a login when credentials are missing.
+GitHub, Claude, Codex, Copilot, Port, and (where it's configured) Spacelift
+steps still open a login when credentials are missing.
 
 Every auth step probes rather than trusting a status command, because most of
 them report on the credentials on disk rather than on whether those credentials
@@ -282,18 +282,18 @@ whatever fails when a real command would. For gcloud that's minting a token, for
 `gh` an API call, for `spacectl` `whoami`, and for `port` minting a token again,
 all free. Port's is the one probe whose output has to be thrown away rather
 than merely quietened, since `port auth token` prints the bearer token on
-stdout. The two agent CLIs have no free equivalent (Copilot has no status
-command at all), so they are probed with a one-token prompt on Haiku, no
-tools and no MCP servers loaded, which costs a rounding error against the Claude
-subscription and about one AI credit against Copilot's quota per run. Each is
-probed once on the happy path, and API-key and token environment variables are
-cleared for the probe so it exercises the account login rather than something
-that outranks it. If one of those variables is set, the run says so as a
-follow-up, since it silently wins over the account credentials the rest of the
-time. Spacelift and Port are the exceptions there: a `SPACELIFT_API_*` key or a
-`PORT_CLIENT_ID`/`PORT_CLIENT_SECRET` pair that works means `spacectl` or `port`
-works, which is all those steps are asking, so their probes are left to use
-whichever credentials they would normally pick.
+stdout. The three agent CLIs have no free live equivalent (Copilot has no status
+command at all, while Claude and Codex status commands only report stored
+credentials), so they are probed with a minimal prompt and no writable access
+or MCP servers. Claude and Copilot explicitly use Haiku; Codex uses its default
+model in an ephemeral run. Each is probed once on the happy path, and API-key
+and token environment variables are cleared for the probe so it exercises the
+account login rather than something that outranks it. If one of those variables
+is set, the run says so as a follow-up, since it silently wins over the account
+credentials the rest of the time. Spacelift and Port are the exceptions there:
+a `SPACELIFT_API_*` key or a `PORT_CLIENT_ID`/`PORT_CLIENT_SECRET` pair that
+works means `spacectl` or `port` works, which is all those steps are asking, so
+their probes are left to use whichever credentials they would normally pick.
 
 The Spacelift step is also the one piece of the run that's opt-in, because an
 endpoint names a specific account and so belongs to the machine rather than to
@@ -351,8 +351,9 @@ kills the run, and says so when that happens.
   shell plugins can hand credentials to the CLIs checked after it)
 - verifies gcloud auth + application-default credentials, and `gh auth status`,
   prompting for login if either is missing
-- verifies Claude and Copilot with a throwaway prompt, running `claude auth login
-  --claudeai` or `copilot login` if the session no longer works
+- verifies Claude, Codex, and Copilot with a throwaway prompt, running `claude
+  auth login --claudeai`, `codex login`, or `copilot login` if the session no
+  longer works
 - verifies Spacelift with `spacectl whoami`, running `spacectl profile login` if
   the token has expired — only on a machine that has set
   `SPACECTL_LOGIN_ENDPOINT`
