@@ -432,6 +432,63 @@ else
   warn "port not installed, skipping"
 fi
 
+step "Checking Datadog auth"
+if command -v pup > /dev/null 2>&1; then
+  # `pup auth status` is for reading, never for gating -- the same trap as
+  # `port auth status`: it exits 0 either way, printing "Not authenticated" and
+  # calling that success. `pup auth test` is no better; it lists which
+  # credentials are configured without making a request. So the probe is a real
+  # authenticated GET, which fails exactly when a working command would.
+  # v2/current_user is free, read-only, and returns nothing secret, unlike the
+  # hidden `pup auth token`, which prints the bearer token. Stdin is closed as
+  # elsewhere so nothing can stall behind the suppressed output.
+  #
+  # It doubles as the identity lookup, so the happy path is one request: the
+  # probe stores the response and callers just ask whether it's empty. On
+  # failure pup writes the error to stderr and leaves stdout empty, so there is
+  # nothing to parse apart.
+  #
+  # No --site and no --org: both default to the stored session, which is the
+  # one account this means to check.
+  #
+  # Unlike the agent CLIs above, DD_API_KEY, DD_APP_KEY and DD_ACCESS_TOKEN are
+  # left alone for the probe, for the reason spacectl's and Port's variables
+  # are: there's no billing difference between a key and an OAuth session, so if
+  # a key is set and works, pup works, which is all this step is asking.
+  pup_user=""
+  pup_probe() {
+    pup_user=$(pup api v2/current_user < /dev/null 2>/dev/null || true)
+    [[ -n "$pup_user" ]]
+  }
+  if ! pup_probe; then
+    # Datadog access tokens last about an hour, so expired-but-refreshable is
+    # the normal morning state rather than an unusual one. `pup auth refresh`
+    # renews from the stored refresh token without a browser, which keeps the
+    # common case on the right side of rule 2; the login below is only for when
+    # the refresh token has gone too. Its stdout is discarded along with the
+    # rest: nothing here should be echoing tokens around.
+    note "Datadog credentials missing or expired — trying silent refresh..."
+    pup auth refresh < /dev/null > /dev/null 2>&1 || true
+    if ! pup_probe; then
+      note "Datadog refresh unavailable — starting login..."
+      # Browser OAuth, so it can't run unattended; that's the auth exception.
+      pup auth login || warn "Datadog login failed, continuing"
+      pup_probe || true
+    fi
+  fi
+  if [[ -n "$pup_user" ]]; then
+    # jq only decorates the message, as in the 1Password step above.
+    pup_email=$(printf '%s' "$pup_user" | jq -r '.data.attributes.email // empty' 2>/dev/null || true)
+    ok "Datadog: ${pup_email:-authenticated}"
+  else
+    recommend "Datadog still not authenticated — run: pup auth login"
+  fi
+else
+  # Installed from Datadog's own tap (`brew install datadog-labs/pack/pup`),
+  # not from homebrew-core.
+  warn "pup not installed, skipping"
+fi
+
 step "Updating gcloud components"
 if command -v gcloud > /dev/null 2>&1; then
   gcloud components update --quiet || warn "gcloud components update failed, continuing"
