@@ -7,15 +7,21 @@ cd "$(dirname "${BASH_SOURCE[0]}")" || exit
 
 git pull origin main
 
-# .claude/ and .agents/ are excluded because they are the link paths the
+# .claude/, .agents/, and .pi/ are excluded because they are the link paths the
 # linkXdgDir steps below manage. This repo carries its own .claude/ holding the
 # project-local Claude Code settings, and syncing that would recreate ~/.claude
 # as a real directory on every run -- which linkClaudeConfig then refuses to
-# touch, so the link could never be made.
+# touch, so the link could never be made. The rsync copies untracked files too,
+# so .pi/ is excluded on the same grounds even though nothing here commits one:
+# pi writes a project-local .pi/ into whatever repo it runs in, including this
+# one. The tracked pi config is at .config/pi/, which is the link target rather
+# than the link path and so syncs normally.
 doSync() {
   rsync --exclude ".git/" \
     --exclude ".claude/" \
     --exclude ".agents/" \
+    --exclude ".pi/" \
+    --exclude ".config/pi/agent/settings.json" \
     --exclude ".DS_Store" \
     --exclude "install.sh" \
     --exclude "README.md" \
@@ -118,6 +124,109 @@ linkClaudeConfig() {
   linkXdgDir claude
 }
 
+# pi has PI_CODING_AGENT_DIR, set in shell/exports, but it is the same deal as
+# CLAUDE_CONFIG_DIR: only processes that sourced the profile see it, and pi's
+# auth.json is per config directory, so a run that missed the export starts out
+# logged out and re-authenticates into a second ~/.pi/agent. Linking the whole
+# ~/.pi (not ~/.pi/agent) keeps that fallback path pointing at the same state.
+# Skills are unaffected: the skills CLI resolves parent symlinks before writing
+# its relative links, so ~/.pi/agent/skills/* keep resolving into ~/.agents.
+linkPiConfig() {
+  linkXdgDir pi
+}
+
+# pi reads exactly one global settings.json, with no include or extends
+# directive, so the machine-local seam every other tool here gets by sourcing an
+# untracked file has to be produced before pi starts. Three layers go into it:
+#
+#   1. the live ~/.config/pi/agent/settings.json, which is why doSync excludes
+#      that path -- pi writes its own state there (lastChangelogVersion today,
+#      whatever it adds tomorrow), and a plain copy would erase it on every run
+#   2. the tracked settings.json in this repo, the config both machines share
+#   3. settings.local.json, untracked, for what only this machine has -- the
+#      claude-bridge package and the provider and model that come with it
+#
+# Layers 2 and 3 win over layer 1 key by key, so the tracked config is
+# authoritative for everything it declares while state pi owns is left alone.
+# Combining 2 and 3 concatenates arrays, deliberately unlike pi's own project
+# overrides, which replace them: replacing would mean repeating every shared
+# package in the local file and silently missing any added to the tracked one
+# later. Applying the result over layer 1 does replace, so dropping a package
+# from the tracked file or the local file actually removes it.
+mergePiSettings() {
+  # Hardcoded ~/.config because that is where the link points and doSync writes.
+  local live="$HOME/.config/pi/agent/settings.json"
+  local tracked="$PWD/.config/pi/agent/settings.json"
+  local overrides="$HOME/.config/pi/agent/settings.local.json"
+
+  [ -f "$tracked" ] || return 0
+
+  # Not fatal: start-day is expected to keep going. With no live settings to
+  # preserve there is nothing to merge, so the tracked copy is used as-is.
+  if ! hash python3 2>/dev/null; then
+    echo "warning: python3 not found, skipping pi settings merge" >&2
+    if [ ! -f "$live" ]; then
+      mkdir -p "$(dirname "$live")"
+      cp "$tracked" "$live"
+      echo "warning: installed $tracked unmerged" >&2
+    else
+      echo "warning: $live left as it was" >&2
+    fi
+    return 0
+  fi
+
+  if python3 - "$live" "$tracked" "$overrides" <<'PY'; then
+import json
+import os
+import sys
+
+live_path, tracked_path, overrides_path = sys.argv[1], sys.argv[2], sys.argv[3]
+
+
+def load(path):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+
+def merge(base, overrides, extend_lists):
+    if isinstance(base, dict) and isinstance(overrides, dict):
+        merged = dict(base)
+        for key, value in overrides.items():
+            if key in base:
+                merged[key] = merge(base[key], value, extend_lists)
+            else:
+                merged[key] = value
+        return merged
+    if extend_lists and isinstance(base, list) and isinstance(overrides, list):
+        merged = list(base)
+        for item in overrides:
+            if item not in merged:
+                merged.append(item)
+        return merged
+    return overrides
+
+
+managed = merge(load(tracked_path), load(overrides_path), extend_lists=True)
+result = merge(load(live_path), managed, extend_lists=False)
+
+# Written to a temporary file and renamed so a running pi never reads a
+# half-written settings.json.
+os.makedirs(os.path.dirname(live_path), exist_ok=True)
+tmp_path = live_path + ".tmp"
+with open(tmp_path, "w") as f:
+    json.dump(result, f, indent=2)
+    f.write("\n")
+os.replace(tmp_path, live_path)
+PY
+    echo "Merged pi settings into $live"
+  else
+    echo "warning: pi settings merge failed, $live left as it was" >&2
+  fi
+}
+
 # The skills CLI (npx skills) has no equivalent of CLAUDE_CONFIG_DIR: its
 # install root is always homedir() + "/.agents", so a link is the only way to
 # move it. Being env-independent is an advantage here, since every caller
@@ -153,7 +262,9 @@ if [ "${1:-}" = "--force" ] || [ "${1:-}" = "-f" ]; then
   doSync
   linkSshConfig
   linkClaudeConfig
+  linkPiConfig
   linkAgentsDir
+  mergePiSettings
   syncVimPlugins
 else
   read -rp "This may overwrite existing files in your home directory. Are you sure? (y/n) "
@@ -162,7 +273,9 @@ else
     doSync
     linkSshConfig
     linkClaudeConfig
+    linkPiConfig
     linkAgentsDir
+    mergePiSettings
     syncVimPlugins
   fi
 fi

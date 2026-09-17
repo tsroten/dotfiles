@@ -542,7 +542,7 @@ step "Updating agent skills"
 # the update that would have fixed it. It also fails outright offline.
 #
 # The CLI hardcodes ~/.agents/skills as its install root (see install.sh step
-# 4), so that directory is what "this machine uses skills" means here.
+# 5), so that directory is what "this machine uses skills" means here.
 if [[ -d "$HOME/.agents/skills" ]]; then
   # --yes so a missing dependency can't stall at npx's install confirmation.
   npx --yes skills update -g || warn "skills update failed, continuing"

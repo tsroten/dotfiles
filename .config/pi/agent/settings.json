@@ -1,0 +1,7 @@
+{
+  "theme": "nord",
+  "packages": [
+    "npm:pi-image-paste"
+  ],
+  "defaultThinkingLevel": "high"
+}

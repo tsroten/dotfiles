@@ -18,7 +18,8 @@ breaks in favor of one of them.
   attention is flagged in a summary at the end.
 - **Close the gap to Linux servers.** macOS ships BSD userland; GNU coreutils
   goes first on `PATH` so flags, output, and muscle memory match the servers.
-- **One theme everywhere.** [Nord][nord], currently — vim, tmux, and alacritty.
+- **One theme everywhere.** [Nord][nord], currently — vim, tmux, alacritty, and
+  pi.
 - **System clipboard everywhere.** `clipboard=unnamed` in vim, tmux-yank in
   tmux, so yanking means the same thing in every context.
 - **Shell-agnostic where it can be.** Anything that works in both bash and zsh
@@ -26,7 +27,7 @@ breaks in favor of one of them.
 - **[XDG][xdg]-first, to keep `$HOME` clean.** Config in `~/.config`, caches in
   `~/.cache`, data in `~/.local/share`, state in `~/.local/state`. Tools without
   native XDG support are coaxed into it with environment variables, aliases, or
-  (for ssh, Claude Code, and the skills CLI) a symlink.
+  (for ssh, Claude Code, pi, and the skills CLI) a symlink.
 - **Current practice over inherited habit.** Prefer the maintained tool and the
   supported auth mechanism; delete config that no longer does anything.
 
@@ -54,10 +55,14 @@ git clone https://github.com/tsroten/dotfiles.git ~/code/dotfiles
 
 1. rsyncs the tree into `~` (excluding `.git/`, `install.sh`, `README.md`, and
    editor cruft). **Existing files are overwritten**, so it prompts for
-   confirmation first — pass `--force`/`-f` to skip the prompt. `.claude/` and
-   `.agents/` are excluded too: they are the link paths steps 3 and 4 manage,
-   and this repo's own `.claude/` would otherwise recreate `~/.claude` as a real
-   directory on every run, blocking the link permanently.
+   confirmation first — pass `--force`/`-f` to skip the prompt. `.claude/`,
+   `.agents/`, and `.pi/` are excluded too: they are the link paths steps 3–5
+   manage, and this repo's own `.claude/` would otherwise recreate `~/.claude`
+   as a real directory on every run, blocking the link permanently. The rsync
+   copies untracked files as well, which is why `.pi/` is excluded even though
+   none is committed — pi writes a project-local one into whatever repo it runs
+   in, this repo included. `.config/pi/agent/settings.json` is excluded for a
+   different reason, explained in step 6: it is merged rather than copied.
 2. Symlinks `~/.ssh/config` → `~/.config/ssh/config`, backing up anything
    already at that path to `~/.ssh/config.backup-<timestamp>`. ssh has no XDG
    support and a symlink (unlike an alias) also applies to non-interactive
@@ -70,14 +75,38 @@ git clone https://github.com/tsroten/dotfiles.git ~/code/dotfiles
    config, a real directory already at `~/.claude` is left alone with a warning
    rather than moved aside, because merging two sets of credentials and session
    state is a judgment call rather than a backup.
-4. Symlinks `~/.agents` → `~/.config/agents`, where the [skills CLI][skills]
+4. Symlinks `~/.pi` → `~/.config/pi`, where [pi][pi] keeps its config,
+   credentials, and installed extensions. `PI_CODING_AGENT_DIR` in
+   `shell/exports` points at `~/.config/pi/agent` and covers everything that
+   sourced the profile; the link covers the rest, since pi's `auth.json` is per
+   config directory and a run that missed the export would otherwise log in
+   again under `~/.pi/agent`. The whole `~/.pi` is linked rather than
+   `~/.pi/agent` so that fallback lands on the same state. Agent skills keep
+   working through it: the skills CLI resolves parent symlinks before writing
+   its relative links, so the entries in `~/.pi/agent/skills` still point into
+   `~/.agents`. Backs up and warns exactly as the Claude Code link does.
+5. Symlinks `~/.agents` → `~/.config/agents`, where the [skills CLI][skills]
    installs agent skills. That CLI honors `XDG_STATE_HOME` for its lockfile but
    hardcodes the install root as `~/.agents`, so a link is the only way to move
    it, and an env-independent one at that, unlike `CLAUDE_CONFIG_DIR` above.
    Skills stay at `~/.agents/skills`, and each agent gets a relative symlink
    pointing through `~/.agents`, so those keep resolving. Shares the
    backup-and-warn behavior of the Claude Code link, for the same reason.
-5. Syncs vim plugins with `:PluginClean! :PluginInstall`. This runs under `vim`
+6. Merges `~/.config/pi/agent/settings.json` from three layers, because pi reads
+   exactly one global settings file and has no include or extends directive.
+   Lowest is the live file already in `~`, which is why step 1 skips it — pi
+   writes its own state there (`lastChangelogVersion` today, whatever it adds
+   tomorrow) and a plain copy would erase it every run. Over that goes this
+   repo's tracked `settings.json`, then the untracked
+   `~/.config/pi/agent/settings.local.json`. The tracked and local layers win
+   key by key, so shared config is authoritative while pi's own state is left
+   alone. Combining those two concatenates arrays — deliberately unlike pi's
+   project overrides, which replace them — so the local file names only the
+   packages it adds instead of repeating the shared ones and silently missing
+   any added later. Applying the result over the live file does replace, so
+   dropping a package from either file really removes it. Needs `python3`;
+   without it the step warns and leaves the live file alone.
+7. Syncs vim plugins with `:PluginClean! :PluginInstall`. This runs under `vim`
    when available and falls back to headless `nvim`, because the vimrc's plugin
    list for vim is a superset of neovim's — running `PluginClean!` under neovim
    would delete the vim-only plugins.
@@ -86,6 +115,7 @@ Since the install is a copy rather than a symlink farm, edits made directly in
 `~` don't flow back. Change files here and re-run `install.sh`.
 
 [skills]: https://skills.sh/
+[pi]: https://github.com/earendil-works/pi
 
 ### Packages
 
@@ -129,6 +159,7 @@ has them.
 | `.config/tmux/` | `tmux.conf`, TPM plugin list, and the `cmus-status` / `mail-count` status-line scripts. |
 | `.config/git/` | `config`, global `ignore`, and a `template/` with ctags hooks. |
 | `.config/alacritty/alacritty.toml` | Terminal: IBM Plex Mono, Nord colors, readline-style Alt-key bindings. |
+| `.config/pi/agent/` | pi: `settings.json` (theme, thinking level, shared extension packages) and the `nord` theme. The settings file is merged into `~` rather than copied, so pi's own state and the machine-local overrides survive; credentials, sessions, and installed extensions live alongside it untracked. |
 | `.config/ssh/config` | Agent/keychain defaults; includes `~/.config/ssh/config.d/*`. |
 | `.config/mysql/`, `.config/mycli/`, `.config/pgcli/` | Database client config. |
 | `.config/python/startup.py` | `PYTHONSTARTUP` hook that puts REPL history under `$XDG_DATA_HOME`. |
@@ -136,7 +167,9 @@ has them.
 | `.local/bin/start-day` | Morning maintenance script (see below). |
 
 The color scheme throughout is [Nord][nord] — vim (`nord-vim`), tmux
-(`nord-tmux`), and alacritty (colors inlined in the TOML).
+(`nord-tmux`), alacritty (colors inlined in the TOML), and pi
+(`.config/pi/agent/themes/nord.json`, mapped from the `nord-vim` highlight
+groups).
 
 [nord]: https://www.nordtheme.com/
 
@@ -153,8 +186,16 @@ these and never gets committed.
 | `~/.config/git/local` | `git/config` — email, signing key, per-host settings |
 | `~/.config/vim/localrc` | `vim/vimrc`, sourced last |
 | `~/.config/ssh/config.d/*` | `ssh/config` |
+| `~/.config/pi/agent/settings.local.json` | `install.sh` step 6 — merged, not sourced: pi settings only one machine has, currently the `claude-bridge` package and the provider and model that go with it |
 
 All are optional; nothing breaks if they're absent.
+
+The pi one is merged rather than sourced, which makes removal less automatic
+than the others: a key deleted from `settings.local.json` is no longer claimed
+by any layer, so the value it last wrote survives in
+`~/.config/pi/agent/settings.json` as though pi had put it there. Packages are
+the exception and do drop out, since the merged array replaces the live one.
+Delete such keys from `~/.config/pi/agent/settings.json` by hand.
 
 ## Shells
 
