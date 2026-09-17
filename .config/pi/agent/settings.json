@@ -1,7 +1,8 @@
 {
   "theme": "nord",
   "packages": [
-    "npm:pi-image-paste"
+    "npm:pi-image-paste",
+    "npm:pi-subagents"
   ],
   "defaultThinkingLevel": "high"
 }
