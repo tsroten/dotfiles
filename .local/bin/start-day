@@ -550,6 +550,35 @@ else
   warn "no agent skills at ~/.agents/skills, skipping"
 fi
 
+step "Updating pi resources"
+if command -v pi > /dev/null 2>&1; then
+  # Deliberately two calls rather than one, and deliberately not `--all`.
+  #
+  # The flags are targets, not additive switches: `--extensions` covers the
+  # packages in settings.json, `--models` refreshes the provider model
+  # catalogs, and neither implies the other, so both have to be asked for.
+  # `--all` would fold in `--self`, which is the one thing this must not do --
+  # pi is a Homebrew formula here, so the brew upgrade step above already owns
+  # the binary, and letting pi replace it from under brew is the same mistake
+  # copilot's --no-auto-update avoids.
+  #
+  # Reported separately because they fail for unrelated reasons: a broken
+  # package is a local install problem, a stale catalog is a provider fetch.
+  # Lumping them under one warning would hide whichever ran second.
+  #
+  # Package updates clone and pull git-sourced packages, so the exported
+  # GIT_TERMINAL_PROMPT=0 at the top of the script already keeps HTTPS remotes
+  # from stalling at a credential prompt; GIT_SSH_COMMAND does the same for SSH
+  # ones, which would otherwise sit at a host-key or passphrase prompt. Pinned
+  # specs (npm:pkg@1.2.3, git:...@ref) are skipped by design, so this only moves
+  # the unpinned ones.
+  GIT_SSH_COMMAND='ssh -o BatchMode=yes -o ConnectTimeout=5' \
+    pi update --extensions || warn "pi package update failed, continuing"
+  pi update --models || warn "pi model catalog refresh failed, continuing"
+else
+  warn "pi not installed, skipping"
+fi
+
 step "Pruning tool caches"
 # Grouped into one step, and silent about tools that aren't installed, unlike
 # the checks elsewhere in the run. Those cover tooling both machines are
