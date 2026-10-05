@@ -570,6 +570,53 @@ else
   warn "cf not installed, skipping"
 fi
 
+step "Checking Grafana auth"
+if command -v gcx > /dev/null 2>&1; then
+  # `gcx config check` is for reading, never for gating: it reports the
+  # configuration as valid and the server as reachable, and exits 0, with a
+  # refresh token that has already expired. So the probe is a real
+  # authenticated GET, the same shape as the Datadog one. /api/user is free,
+  # read-only, and doubles as the identity lookup. Gated on the exit status
+  # rather than on output, since a service-account login has no email and
+  # still means gcx works. Stdin is closed as elsewhere so nothing can stall
+  # behind the suppressed output.
+  #
+  # The access token only lasts an hour, but gcx refreshes it on any call
+  # against a 30-day refresh token, so the probe covers the normal morning state
+  # and the login below is only for when the refresh token has gone too.
+  #
+  # This is the stack login (`gcx login`), not the separate Grafana Cloud API
+  # one (`gcx cloud login`). That one is an experimental OAuth flow with no
+  # refresh token, so checking it here would mean a browser login every
+  # morning, for the handful of commands that manage stacks and access
+  # policies.
+  #
+  # No --context: it defaults to the config's current-context, which is the one
+  # stack this means to check. GRAFANA_* overrides are left alone for the
+  # probe, for the reason spacectl's and Port's variables are.
+  gcx_email=""
+  gcx_probe() {
+    local out
+    out=$(gcx api /api/user --jq '.email // ""' < /dev/null 2>/dev/null) || return 1
+    # --jq prints a JSON string, quotes included.
+    gcx_email=${out//\"/}
+  }
+  if ! gcx_probe; then
+    note "Grafana credentials missing or expired — starting login..."
+    # Browser OAuth, so it can't run unattended; that's the auth exception.
+    # --oauth skips the auth-method prompt; with no context named, this
+    # re-authenticates the current one and keeps its server.
+    gcx login --oauth || warn "Grafana login failed, continuing"
+  fi
+  if gcx_probe; then
+    ok "Grafana: ${gcx_email:-authenticated}"
+  else
+    recommend "Grafana still not authenticated — run: gcx login"
+  fi
+else
+  warn "gcx not installed, skipping"
+fi
+
 step "Updating gcloud components"
 if command -v gcloud > /dev/null 2>&1; then
   gcloud components update --quiet || warn "gcloud components update failed, continuing"
