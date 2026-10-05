@@ -489,6 +489,87 @@ else
   warn "pup not installed, skipping"
 fi
 
+step "Checking Cloudflare auth"
+# Same caveat as MacPorts' `port`: Cloud Foundry's CLI also installs a `cf`, so
+# on a machine with that one first in PATH both probes below fail and this
+# reports as unauthenticated.
+if command -v cf > /dev/null 2>&1; then
+  # Two credentials, checked separately, because they fail for unrelated reasons
+  # and only one of them can be fixed by logging in. CLOUDFLARE_API_TOKEN, when
+  # set, outranks the OAuth session in every command, so it's the one actually
+  # in use; the OAuth session is still kept alive for whenever the variable
+  # isn't exported, and is what `cf auth login` maintains.
+  #
+  # `cf auth whoami` is for reading, never for gating -- the same trap as
+  # `port auth status`: it exits 0 whether or not anything is logged in, and its
+  # tokenValid comes from GET /user, which a scoped API token can't read, so it
+  # calls a working token invalid. Each probe below is instead a real request
+  # that fails exactly when a working command would. Stdin is closed as
+  # elsewhere so nothing can stall behind the suppressed output.
+
+  # The API token. /user/tokens/verify is the one endpoint any API token can
+  # call regardless of its permissions, and it's free. It rejects OAuth tokens,
+  # which is why the session gets a different probe.
+  #
+  # The variable may be an op:// reference rather than the token itself (it is
+  # on the work machine), in which case it only works under `op run`, which
+  # swaps the reference for the secret in the child's environment.
+  if [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+    cf_token_probe() {
+      if [[ "$CLOUDFLARE_API_TOKEN" == op://* ]]; then
+        op run -- cf user tokens verify < /dev/null > /dev/null 2>&1
+      else
+        cf user tokens verify < /dev/null > /dev/null 2>&1
+      fi
+    }
+    if [[ "$CLOUDFLARE_API_TOKEN" == op://* ]] && ! command -v op > /dev/null 2>&1; then
+      warn "CLOUDFLARE_API_TOKEN is an op:// reference but op isn't installed, skipping the token check"
+    elif cf_token_probe; then
+      ok "Cloudflare API token: valid"
+    else
+      # No login here: `cf auth login` can't repair a token that lives in the
+      # environment, so this is a follow-up rather than the auth exception.
+      recommend "Cloudflare API token in CLOUDFLARE_API_TOKEN failed verification — check 1Password is signed in, otherwise rotate it at https://dash.cloudflare.com/profile/api-tokens"
+    fi
+  fi
+
+  # The OAuth session, with the token cleared so it can't answer instead. GET
+  # /user is the cheapest real call that an OAuth session can make, it's free,
+  # and it doubles as the identity lookup, the same shape as the Datadog probe.
+  # On failure cf writes the error to stderr and leaves stdout empty.
+  #
+  # The access token only lasts an hour, so expired-but-refreshable is the
+  # normal morning state. cf refreshes it itself on any API call, so the probe
+  # covers that too, and the login below is only for when the refresh token has
+  # gone as well.
+  cf_user=""
+  cf_oauth_probe() {
+    cf_user=$(env -u CLOUDFLARE_API_TOKEN cf user get < /dev/null 2>/dev/null || true)
+    [[ -n "$cf_user" ]]
+  }
+  if ! cf_oauth_probe; then
+    note "Cloudflare OAuth session missing or expired — starting login..."
+    # Browser OAuth, so it can't run unattended; that's the auth exception. The
+    # token is cleared here too, since cf refuses to start an OAuth login while
+    # it's set. Needs cf 1.0.0-beta.0 or later: 0.9.x requested scopes
+    # Cloudflare's OAuth server rejects, so the browser flow failed with
+    # 'Unknown oauth scope "email_routing:read"'.
+    env -u CLOUDFLARE_API_TOKEN cf auth login || warn "Cloudflare login failed, continuing"
+    cf_oauth_probe || true
+  fi
+  if [[ -n "$cf_user" ]]; then
+    # jq only decorates the message, as in the 1Password step above.
+    cf_email=$(printf '%s' "$cf_user" | jq -r '.email // empty' 2>/dev/null || true)
+    ok "Cloudflare OAuth: ${cf_email:-authenticated}"
+  else
+    recommend "Cloudflare OAuth still not authenticated — run: env -u CLOUDFLARE_API_TOKEN cf auth login"
+  fi
+else
+  # Installed with `npm install -g cf`, not from Homebrew (whose `cf` formula is
+  # an unrelated tool).
+  warn "cf not installed, skipping"
+fi
+
 step "Updating gcloud components"
 if command -v gcloud > /dev/null 2>&1; then
   gcloud components update --quiet || warn "gcloud components update failed, continuing"

@@ -136,6 +136,9 @@ font alacritty asks for, and `gh`, `node`, `1password-cli`, `claude-code`,
 `codex`, `copilot-cli`, and `spacectl` are used by `start-day`. The Port CLI is
 used by `start-day` too but isn't a Homebrew package: install it with `npm install -g
 @port-labs/port-cli`, which also means `brew upgrade` won't keep it current.
+The Cloudflare CLI is the same story: `npm install -g cf` (Homebrew's `cf` is an
+unrelated tool), and it needs `1.0.0-beta.0` or later, since `cf auth login` on
+0.9.x asks for OAuth scopes Cloudflare rejects.
 `1password-cli` needs the `1password` app alongside it: `op` authenticates
 through the desktop app's CLI integration rather than holding its own
 credentials, and installing both from Homebrew keeps `op` on the `brew upgrade`
@@ -308,8 +311,8 @@ and the dotfiles install, `--quiet` on the gcloud component update.
 
 *Auth is the deliberate exception.* A login has to be interactive, and there's
 no point converging a machine you then can't use — so the 1Password, gcloud,
-GitHub, Claude, Codex, Copilot, Port, and (where it's configured) Spacelift
-steps still open a login when credentials are missing.
+GitHub, Claude, Codex, Copilot, Port, Cloudflare, and (where it's configured)
+Spacelift steps still open a login when credentials are missing.
 
 Every auth step probes rather than trusting a status command, because most of
 them report on the credentials on disk rather than on whether those credentials
@@ -335,6 +338,14 @@ credentials the rest of the time. Spacelift and Port are the exceptions there:
 a `SPACELIFT_API_*` key or a `PORT_CLIENT_ID`/`PORT_CLIENT_SECRET` pair that
 works means `spacectl` or `port` works, which is all those steps are asking, so
 their probes are left to use whichever credentials they would normally pick.
+
+Cloudflare checks two credentials. If `CLOUDFLARE_API_TOKEN` is set, it's
+verified with `cf user tokens verify` (under `op run` when the variable is an
+`op://` reference), and a failure is a follow-up rather than a login, since `cf
+auth login` can't repair a token that lives in the environment. The OAuth
+session is then probed with `cf user get` and the token cleared, because the
+token outranks the session in every command and `cf auth whoami` exits 0 either
+way.
 
 The Spacelift step is also the one piece of the run that's opt-in, because an
 endpoint names a specific account and so belongs to the machine rather than to
@@ -401,6 +412,8 @@ kills the run, and says so when that happens.
 - verifies Port with `port auth token` against the config's `default_org`,
   running `port auth login` if that org's short-lived OAuth session can no
   longer produce a token
+- verifies `CLOUDFLARE_API_TOKEN` (when set) and the `cf` OAuth session, running
+  `cf auth login` if the session can't be refreshed
 - updates gcloud components
 - `git pull --ff-only` in every repo directly under `~/code`, skipping any with
   uncommitted changes
