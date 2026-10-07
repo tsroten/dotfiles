@@ -617,6 +617,30 @@ else
   warn "gcx not installed, skipping"
 fi
 
+step "Checking incident.io auth"
+if command -v inc > /dev/null 2>&1; then
+  # Unlike most status commands above, `inc auth status` makes a real GET to
+  # /v1/identity and fails when credentials are missing, expired, or rejected.
+  # Stdin is closed so the probe can't prompt behind the suppressed output.
+  # INCIDENT_API_KEY is left alone: a working key means inc works, just as
+  # with Spacelift's credentials.
+  inc_probe() {
+    inc auth status < /dev/null > /dev/null 2>&1
+  }
+  if ! inc_probe; then
+    note "incident.io credentials missing or expired — starting login..."
+    # Browser OAuth on a terminal; that's the auth exception.
+    inc auth login || warn "incident.io login failed, continuing"
+  fi
+  if inc_probe; then
+    ok "incident.io: authenticated"
+  else
+    recommend "incident.io still not authenticated — run: inc auth login"
+  fi
+else
+  warn "inc not installed, skipping"
+fi
+
 step "Updating gcloud components"
 if command -v gcloud > /dev/null 2>&1; then
   gcloud components update --quiet || warn "gcloud components update failed, continuing"

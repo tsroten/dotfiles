@@ -311,8 +311,8 @@ and the dotfiles install, `--quiet` on the gcloud component update.
 
 *Auth is the deliberate exception.* A login has to be interactive, and there's
 no point converging a machine you then can't use — so the 1Password, gcloud,
-GitHub, Claude, Codex, Copilot, Port, Cloudflare, Grafana, and (where it's
-configured) Spacelift steps still open a login when credentials are missing.
+GitHub, Claude, Codex, Copilot, Port, Cloudflare, Grafana, incident.io, and (where
+it's configured) Spacelift steps still open a login when credentials are missing.
 
 Every auth step probes rather than trusting a status command, because most of
 them report on the credentials on disk rather than on whether those credentials
@@ -352,6 +352,12 @@ context valid and online after its refresh token has expired. Only the stack
 login (`gcx login`) is checked. The Grafana Cloud API login (`gcx cloud login`)
 is left out: it's an experimental OAuth flow with no refresh token, so checking
 it would mean a browser login every morning.
+
+When `inc` is installed, incident.io is checked with `inc auth status`. Unlike
+most status commands, it makes a real request to `/v1/identity` and fails when
+authentication doesn't work. A failed check starts `inc auth login`, then checks
+again before reporting success. `INCIDENT_API_KEY` is left in place, so a working
+API key is accepted as well as a browser login.
 
 The Spacelift step is also the one piece of the run that's opt-in, because an
 endpoint names a specific account and so belongs to the machine rather than to
@@ -422,6 +428,8 @@ kills the run, and says so when that happens.
   `cf auth login` if the session can't be refreshed
 - verifies the current `gcx` context with `gcx api /api/user`, running `gcx
   login --oauth` if its refresh token has expired
+- verifies incident.io with `inc auth status` when `inc` is installed, running
+  `inc auth login` if authentication fails
 - updates gcloud components
 - `git pull --ff-only` in every repo directly under `~/code`, skipping any with
   uncommitted changes
