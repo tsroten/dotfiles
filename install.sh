@@ -16,6 +16,11 @@ git pull origin main
 # pi writes a project-local .pi/ into whatever repo it runs in, including this
 # one. The tracked pi config is at .config/pi/, which is the link target rather
 # than the link path and so syncs normally.
+# ~/.config/claude is otherwise untracked (credentials, history, installed
+# plugins), but .config/claude/agents/ is config: the user-level subagent
+# definitions, which this sync installs like any other tracked file. A
+# definition deleted here stays installed until removed from ~ by hand, since
+# the sync never uses --delete.
 doSync() {
   rsync --exclude ".git/" \
     --exclude ".claude/" \

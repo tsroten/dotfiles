@@ -63,6 +63,13 @@ git clone https://github.com/tsroten/dotfiles.git ~/code/dotfiles
    none is committed — pi writes a project-local one into whatever repo it runs
    in, this repo included. `.config/pi/agent/settings.json` is excluded for a
    different reason, explained in step 6: it is merged rather than copied.
+   This is also what installs the Claude Code subagents: `.config/claude/agents/`
+   lands in `~/.config/claude/agents/`, the user-level directory, so they apply
+   in every repository. They are generic (`scout`, `implementer`,
+   `careful-implementer`, `adversary`) and defer to each repo's `AGENTS.md` or
+   `CLAUDE.md` for specifics. A repo's own `.claude/agents/` definition with the
+   same name replaces the user-level one outright. Removing a definition here
+   does not remove it from `~`, because the sync never deletes.
 2. Symlinks `~/.ssh/config` → `~/.config/ssh/config`, backing up anything
    already at that path to `~/.ssh/config.backup-<timestamp>`. ssh has no XDG
    support and a symlink (unlike an alias) also applies to non-interactive
