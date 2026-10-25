@@ -99,6 +99,11 @@ git clone https://github.com/tsroten/dotfiles.git ~/code/dotfiles
    Skills stay at `~/.agents/skills`, and each agent gets a relative symlink
    pointing through `~/.agents`, so those keep resolving. Shares the
    backup-and-warn behavior of the Claude Code link, for the same reason.
+   The tracked `issue-work` skill lives at `.config/agents/skills/issue-work/`,
+   so step 1 installs it into `~/.config/agents/skills/`, which this link
+   exposes as `~/.agents/skills/` and `~/.claude/skills/`. As with the
+   subagents, a file deleted from the repo stays installed until removed from
+   `~` by hand.
 6. Merges `~/.config/pi/agent/settings.json` from three layers, because pi reads
    exactly one global settings file and has no include or extends directive.
    Lowest is the live file already in `~`, which is why step 1 skips it — pi
