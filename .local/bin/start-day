@@ -260,6 +260,50 @@ else
   warn "claude not installed, skipping"
 fi
 
+step "Checking MCP server auth"
+if command -v claude > /dev/null 2>&1; then
+  # OAuth-backed HTTP servers expire on their own schedule, separate from the
+  # Claude account login above, and only report it as "Needs authentication"
+  # inside a session. `claude mcp get` health-checks one server in about a
+  # second (`claude mcp list` checks all of them and takes ~20s), and its
+  # Status line is the only thing that distinguishes an expired login from a
+  # server that is merely down, so only the former triggers a login.
+  # plugin:stripe:stripe and vantage are the two that lapse; the claude.ai
+  # Stripe connector is a separate registration of the same server and is
+  # managed from claude.ai, so it isn't handled here.
+  # A server that isn't configured on this host isn't a problem, so it is
+  # reported as "not configured" and skipped without a warning.
+  mcp_status() {
+    local out
+    out=$(claude mcp get "$1" < /dev/null 2>&1 || true)
+    if [[ "$out" == "No MCP server named"* ]]; then
+      echo "not configured"
+    else
+      printf '%s\n' "$out" | sed -n 's/^ *Status: *//p'
+    fi
+  }
+  for mcp_server in vantage plugin:stripe:stripe; do
+    mcp_state=$(mcp_status "$mcp_server")
+    [ "$mcp_state" = "not configured" ] && continue
+    case "$mcp_state" in
+      *"Needs authentication"*)
+        note "$mcp_server needs authentication — starting login..."
+        # Browser OAuth on a terminal; that's the auth exception.
+        claude mcp login "$mcp_server" || warn "$mcp_server login failed, continuing"
+        mcp_state=$(mcp_status "$mcp_server")
+        ;;
+    esac
+    case "$mcp_state" in
+      *Connected*) ok "MCP $mcp_server: connected" ;;
+      *"Needs authentication"*)
+        recommend "MCP $mcp_server still not authenticated — run: claude mcp login $mcp_server" ;;
+      *) warn "MCP $mcp_server: ${mcp_state:-no status reported}" ;;
+    esac
+  done
+else
+  warn "claude not installed, skipping"
+fi
+
 step "Checking Codex auth"
 if command -v codex > /dev/null 2>&1; then
   # `codex login status` exits successfully when credentials are present, but
