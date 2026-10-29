@@ -268,9 +268,12 @@ if command -v claude > /dev/null 2>&1; then
   # second (`claude mcp list` checks all of them and takes ~20s), and its
   # Status line is the only thing that distinguishes an expired login from a
   # server that is merely down, so only the former triggers a login.
-  # plugin:stripe:stripe and vantage are the two that lapse; the claude.ai
-  # Stripe connector is a separate registration of the same server and is
-  # managed from claude.ai, so it isn't handled here.
+  # vantage, drata, mercury and plugin:stripe:stripe are the HTTP ones that
+  # lapse; the claude.ai Stripe connector is a separate registration of the
+  # same server and is managed from claude.ai, so it isn't handled here.
+  # plugin:aikido:aikido-mcp is stdio, so it reports Connected once the process
+  # starts and never "Needs authentication"; its login is the aikido_login tool
+  # inside a session. Listing it only catches the server failing to start.
   # A server that isn't configured on this host isn't a problem, so it is
   # reported as "not configured" and skipped without a warning.
   mcp_status() {
@@ -282,7 +285,7 @@ if command -v claude > /dev/null 2>&1; then
       printf '%s\n' "$out" | sed -n 's/^ *Status: *//p'
     fi
   }
-  for mcp_server in vantage plugin:stripe:stripe; do
+  for mcp_server in vantage drata mercury plugin:stripe:stripe plugin:aikido:aikido-mcp; do
     mcp_state=$(mcp_status "$mcp_server")
     [ "$mcp_state" = "not configured" ] && continue
     case "$mcp_state" in
